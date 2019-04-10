@@ -126,10 +126,6 @@ public class FileSystemManager extends Thread {
 		 */
 		public EVENT event;
 		/**
-		 * The path separator for this system
-		 */
-		public final String pathSeparator = FileSystems.getDefault().getSeparator();
-		/**
 		 * Additional information for the file/directory.
 		 */
 		public FileDescriptor fileDescriptor;
@@ -605,6 +601,11 @@ public class FileSystemManager extends Thread {
 				File file = new File(pathname);
 				pathevents.add(new FileSystemEvent(file.getParent(),file.getName(),EVENT.DIRECTORY_CREATE));
 			}
+			Collections.sort(pathevents,(arg0,arg1) ->
+				{
+					return arg0.path.length()-arg1.path.length();	
+				}
+			);
 			keys = new ArrayList<String>(watchedFiles.keySet());
 			for(String pathname : keys) {
 				File file = new File(pathname);
