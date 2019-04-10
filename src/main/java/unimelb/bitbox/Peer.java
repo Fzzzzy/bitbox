@@ -72,7 +72,7 @@ class Listen implements Runnable
         try {
             ServerSocket serverSocket = new ServerSocket(hostingPort);
 
-            while (numOfConnections<10) {
+            while (true) {
                 System.out.println("Server listening for a connection");
                 Socket clientSocket = serverSocket.accept();
                 this.executor.execute(new Connection(clientSocket));
