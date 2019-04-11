@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 
-
 // take care of each listening event
 class Connection implements Runnable {
     DataInputStream in;
