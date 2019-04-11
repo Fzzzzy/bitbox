@@ -60,7 +60,6 @@ class Connection implements Runnable {
                 case "HANDSHAKE_REQUEST": {
                     if (numOfConnections.get()<11)
                     {
-
                         JSONObject commandJson = CommandGroup.CommandMap.get("HANDSHAKE_RESPONSE");
                         JSONObject PeerJson = (JSONObject) commandJson.get("hostport");
                         // unnecessary handshake
@@ -186,7 +185,7 @@ class Listen implements Runnable
         try {
             ServerSocket serverSocket = new ServerSocket(hostingPort);
             while (numOfConnections<11) {
-                System.out.println("Server listening for a connection");
+                 System.out.println("Server listening for a connection");
                 Socket clientSocket = serverSocket.accept();
                 this.numOfConnections++;
                 // using submit rather than execute, cause it can allow us operate the returning future object
@@ -323,18 +322,15 @@ public class Peer
         /* to test the peer to peer communication, the following line needs to be commented. */
         //  new ServerMain();
 
-        Peer peer1= new Peer();
-     Listen listen = new Listen(peer1);
+       Peer peer1= new Peer();
+   Listen listen = new Listen(peer1);
      Thread listenThread = new Thread(listen);
      listenThread.start();
 
-
         /*  listening testing    */
        // peer1.listen();
-
        /* sending testing */
        //peer1.sendCommand(8112, "localhost", "saved for different command");
-
 
     }
 }
