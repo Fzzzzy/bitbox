@@ -20,19 +20,7 @@ public class CommandGroup {
     public static String[] CommandString={
             "{\"command\":\"INVALID_PROTOCOL\",\"message\":\"message must contain a command field as string\"}",
 
-            "{\"command\":\"CONNECTION_REFUSED\"," +
-                    "\"message\":\"connection limit reached\"" +
-                    "\"peers\":{" +
-                    "{" +
-                    "\"host\":\"sunrise.cis.unimelb.edu.au\"," +
-                    "\"port\":8111" +
-                    "}," +
-                    "{" +
-                    "\"host\":\"bigdata.cis.unimelb.edu.au\"," +
-                    "}" +
-                    "\"port\":8500" +
-                    "}" +
-                    " }",
+            "{\"command\":\"CONNECTION_REFUSED\",\"message\":\"connection limit reached\",\"peers\":{\"host\":\"sunrise.cis.unimelb.edu.au\",\"port\":8111}}",
 
             "{\"command\":\"HANDSHAKE_REQUEST\"," +
                     "\"hostPort\":{" +
@@ -143,15 +131,21 @@ public class CommandGroup {
     };
 
 
+
+
+
+
+
+
+
     public CommandGroup()
     {
 
-       for(int i=2; i<CommandString.length; i++) {
+       for(int i=0; i<CommandString.length; i++) {
             try {
               JSONObject json;
-               json = (JSONObject) new JSONParser().parse(CommandString[i]);
+               json = (JSONObject) new JSONParser().parse(CommandString[1]);
                 String key = CommandString[i];
-
               this.CommandMap.put(key, json);
             }catch (ParseException e)
             {
