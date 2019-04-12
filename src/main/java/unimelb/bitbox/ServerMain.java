@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import unimelb.bitbox.util.Configuration;
 import unimelb.bitbox.util.FileSystemManager;
 import unimelb.bitbox.util.FileSystemObserver;
+import unimelb.bitbox.util.FileSystemManager.EVENT;
 import unimelb.bitbox.util.FileSystemManager.FileSystemEvent;
 
 public class ServerMain implements FileSystemObserver {
@@ -19,7 +20,10 @@ public class ServerMain implements FileSystemObserver {
 
 	@Override
 	public void processFileSystemEvent(FileSystemEvent fileSystemEvent) {
-		// TODO: process events
+		final EVENT event = fileSystemEvent.event;
+		Sending send = new Sending(Peer.getAddress(), Peer.getPortNo(), event);
+        Thread sendThread = new Thread(send);
+        sendThread.start();
 	}
 	
 }
