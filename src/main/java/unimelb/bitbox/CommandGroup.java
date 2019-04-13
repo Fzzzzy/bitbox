@@ -145,7 +145,7 @@ public class CommandGroup {
             try {
               JSONObject json;
                json = (JSONObject) new JSONParser().parse(CommandString[i]);
-                String key = CommandString[i];
+                String key = CommandName[i];
               this.CommandMap.put(key, json);
             }catch (ParseException e)
             {
