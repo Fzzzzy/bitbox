@@ -178,8 +178,8 @@ class ConnectionManager implements Runnable
 	public void run() {
 		// TODO Auto-generated method stub
 		System.out.println("connectionManager is started");
-		
-		while(server.isRunning) {
+	//4.16 1. bug fixed   when the list is empty, no need to run analysis	
+		while(server.isRunning && !connectionList.isEmpty()) {
 		//System.out.println(connectionList.size());
 			for(Connection connection:connectionList)
 			{
