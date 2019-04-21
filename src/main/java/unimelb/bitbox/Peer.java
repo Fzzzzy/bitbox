@@ -1,10 +1,12 @@
 package unimelb.bitbox;
 
 import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import unimelb.bitbox.util.Configuration;
+import net.sf.json.JSON;
+import net.sf.json.JSONObject;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -15,10 +17,17 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
+
+import java.util.Queue;
+import java.util.LinkedList;
+import java.util.Map;
+
 
 // take care of each listening event
 class Connection {
@@ -26,11 +35,19 @@ class Connection {
     DataOutputStream out;
     Socket clientSocket;
     // private static AtomicInteger numOfConnections;
-    private static JSONArray ConnectedPeers;
+    //private static JSONArray ConnectedPeers;
     // private String hostname;
     // private int port;
     // private String command;
-
+    public int getPort() {
+ 
+    	return this.clientSocket.getLocalPort();
+    }
+    //return the local
+    public String getHost() {
+    	 
+    	return this.clientSocket.getLocalAddress().getHostAddress();
+    }
     public Connection(Socket aClientSocket) {
 
         try {
@@ -55,34 +72,30 @@ class Connection {
         }
     }
 
-    public String read() {
+    public JSONObject read() {
 
         String command = null;
-        try { // an echo server
-            System.out.println("server reading data");
+        JSONObject jsonObject = null;
+        try { 
             String data = in.readUTF(); // read a line of data from the stream
-            JSONObject json = (JSONObject) new JSONParser().parse(data);
-            command = (String) json.get("command");
+            System.out.println("server reading data hahahhaah: " + data);
+            // JSONObject json = (JSONObject) new JSONParser().parse(data);
+            jsonObject = JSONObject.fromObject(data); 
+            command = (String) jsonObject.get("command");
         } catch (EOFException e) {
             System.out.println("EOF:" + e.getMessage());
         } catch (IOException e) {
             System.out.println("readline:" + e.getMessage());
-        } catch (ParseException e) {
-            e.printStackTrace();
         }
-        // finally{
-        // try {
-        // clientSocket.close();
-        // }catch (IOException e){/*close failed*/}
-        // }
-        return command;
+        
+        	return jsonObject;
     }
 
     public void send(String command) {
 
         try {
             out.writeUTF(command);
-
+            System.out.println("send: "+ command);
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -104,7 +117,9 @@ class Server implements Runnable {
     // ExecutorService executor = Executors.newFixedThreadPool(10);
     private int port;
     private int numOfConnections = 0;
-    public static ArrayList<Connection> connectionList = new ArrayList<>();
+    //public static ArrayList<Connection> connectionList = new ArrayList<>();
+   // public static Queue<Connection> connectionQueue = new LinkedList<Connection>();
+    public static ConcurrentLinkedDeque<Connection> connectionQueue = new ConcurrentLinkedDeque<Connection>();;
     public int maximumConnections = 0;
     public boolean isRunning = false;
 
@@ -119,17 +134,8 @@ class Server implements Runnable {
     }
 
     public int getConnectionNum() {
-        return connectionList.size();
+        return connectionQueue.size();
     }
-    // public synchronized void AddConnection()
-    // {
-    // numOfConnections++;
-    // }
-    // public synchronized void ReduceConnection()
-    // {
-    // numOfConnections--;
-    //
-    // }
 
     public void run() {
         try {
@@ -140,15 +146,15 @@ class Server implements Runnable {
             while (this.getConnectionNum() <= maximumConnections) {
                 System.out.println("Server listening for a connection");
                 Socket clientSocket = serverSocket.accept();
-                // this.numOfConnections++;
-
+              
                 // using submit rather than execute, cause it can allow us operate the returning
                 // future object
                 Connection c = new Connection(clientSocket);
-                connectionList.add(c);
-                System.out.println(connectionList.size());
+                Server.connectionQueue.addLast(c);;
+                System.out.println("Server Connection Add: "+ Server.connectionQueue.size());
+                System.out.println(c.hashCode());
+                
                 // get the numOfConnection value and update the outside numof Connection
-
                 // this.executor.submit(c);
 
             }
@@ -159,115 +165,123 @@ class Server implements Runnable {
 }
 
 class ConnectionManager implements Runnable {
-    ArrayList<Connection> connectionList;
+    //ArrayList<Connection> connectionList;
     int maximumConnections;
-    public JSONArray ConnectedPeers;
+   // public JSONArray ConnectedPeers = new JSONArray();
     public Server server;
+	//private boolean isInstance = false;
+	public static ConnectionManager single = null;
+   // public Connection connection;
 
     public ConnectionManager(Server server) {
-        this.connectionList = server.connectionList;
+    	//isInstance = true;
+       // this.connectionList = server.connectionList;
         this.maximumConnections = server.maximumConnections;
         this.server = server;
     }
-
+    public ConnectionManager(){
+    	
+    }
+    public static ConnectionManager getInstance() {
+        if (single == null) {  
+            single = new ConnectionManager();
+        }  
+       return single;
+   }
     @Override
     public void run() {
+    	Connection connection = null;
+    	 
         // TODO Auto-generated method stub
         System.out.println("connectionManager is started");
-        // 4.16 1. bug fixed when the list is empty, no need to run analysis
-        while (server.isRunning && !connectionList.isEmpty()) {
-            // System.out.println(connectionList.size());
-            for (Connection connection : connectionList) {
-                String command = connection.read();
-                commandAnalysis(command, connection);
-                removeConnection(connection);
-                System.out.println(connection.clientSocket.getRemoteSocketAddress());
-                System.out.println(connection.clientSocket.getPort());
-            }
+        while (server.isRunning) {
+        	if (Server.connectionQueue.size() > 0)
+        	{
+        		System.out.println("Server connection read: "+ Server.connectionQueue.size());
+        	}
+        	
+            while(Server.connectionQueue.size() > 0){
+            	    connection = connectionPoll();
+            	   // command = (String) jsonObject.get("command");
+            	   // String command = (String)connection.read().get("command");
+            	    commandAnalysis(connection);
+                 
+                    System.out.println(connection.clientSocket.getRemoteSocketAddress());
+                    System.out.println(connection.clientSocket.getPort());
+                  }
+
         }
 
     }
 
-    public void removeConnection(Connection connection) {
-        connectionList.remove(connection);
+    public Connection connectionPoll() {
+    	     	return Server.connectionQueue.removeFirst();  
     }
 
-    public void commandAnalysis(String command, Connection connection) {
-
-        switch (command) {
+    public void commandAnalysis(Connection connection) {
+    	JSONObject jsonObject = connection.read();
+    	System.out.println("Ahhhhhh"+jsonObject);
+        switch ((String) jsonObject.get("command")) { 
         case "HANDSHAKE_REQUEST": {
-            if (connectionList.size() <= maximumConnections) {
-                JSONObject commandJson = CommandGroup.CommandMap.get("HANDSHAKE_RESPONSE");
-                JSONObject PeerJson = (JSONObject) commandJson.get("hostport");
-                // unnecessary handshake
-                if (ConnectedPeers.contains(PeerJson)) {
-                    commandJson = CommandGroup.CommandMap.get("INVALID_PROTOCOL");
+            if (Server.connectionQueue.size() <= maximumConnections) {
+            	
+              //  JSONObject commandJson = CommandGroup.CommandMap.get("HANDSHAKE_RESPONSE");
+            	 String response =  "{\"command\":\"HANDSHAKE_RESPONSE\"," + "\"hostPort\":{" +
+            			 			"\"host\":\"" + connection.getHost() + "\"," +
+            			 			"\"port\":" + connection.getPort() + "}}";
+                
+            	 JSONObject PeerJson = (JSONObject) jsonObject.get("hostPort");
+               
+                if ( Peer.availablePeers.containsKey(PeerJson.toString())) {
+                    //commandJson = CommandGroup.CommandMap.get("INVALID_PROTOCOL");
+                	response  =  "{\"command\":\"INVALID_PROTOCOL\",\"message\":\"message must contain a command field as string\"}";
+
                 } else {
-                    ConnectedPeers.add(PeerJson);
-                    // numOfConnections.incrementAndGet();
+                	 Peer.availablePeers.put(PeerJson.toString(), PeerJson); 
                 }
+                System.out.println("Because of the handshake request, availablePeers is identified" + response);
+                System.out.println("available peer in peer1: "+ Peer.availablePeers.toString());
+               
+                connection.send(response);
+            } else if (Server.connectionQueue.size() == maximumConnections) {
+                //  JSONObject commandJson = CommandGroup.CommandMap.get("CONNECTION_REFUSED");
                 // out.writeUTF(commandJson.toString());
-                connection.send(commandJson.toString());
-            } else if (connectionList.size() == maximumConnections) {
-                JSONObject commandJson = CommandGroup.CommandMap.get("CONNECTION_REFUSED");
-                // out.writeUTF(commandJson.toString());
-                connection.send(commandJson.toString());
+            	
+            	String refuse =  "{\"command\":\"CONNECTION_REFUSED\",\"message\":\"connection limit reached\",\"peers\":{\"host\":\"sunrise.cis.unimelb.edu.au\",\"port\":8111}}";
+                connection.send(refuse);
             }
             break;
         }
-        //
-        // case "FILE_CREATE_REQUEST":
-        // {
-        // // issafepathname filenameexist -> check the file managerment system
-        // // respond, failed-> status. other message-> return the as the methods
-        // returns
-        //
-        // //success: createFileLoader, checkshortcut
-        // // stop, use the local copy or start requesting bytes
-        //
-        // break;
-        // }
-        //
-        //
-        // case "FILE_BYTES_RESPONSE":
-        // {
-        // // writefile check filecomplete.. untill-> complete
-        // break;
-        // }
-        //
-        // case "FILE_DELETE_REQUEST":
-        // {
-        // // // issafepathname filenameexist -> check the file managerment system
-        // // // respond, failed-> status. other message-> return the as the methods
-        // returns
-        // break;
-        // }
-        // case "FILE_MODIFY_REQUEST":
-        // {
-        // // issafepathname filenameexist -> check the file managerment system
-        // // respond, failed-> status. other message-> return the as the methods
-        // returns -> response
-        // break;
-        // }
-        //
-        //
-        // case "DIRECTORY_CREATE_REQUEST":
-        // {
-        // // issafepathname filenameexist -> check the file managerment system
-        // // respond, failed-> status. other message-> return the as the methods
-        // returns
-        // break;
-        // }
-        //
-        // case "DIRECTORY_DELETE_REQUEST":
-        // {
-        // break;
-        // }
-        //
+        case "HANDSHAKE_RESPONSE":{
+        	//JSONObject commandJson = connection.read();
+        	//  System.out.println(commandJson.toString());
+            JSONObject PeerJson = (JSONObject)jsonObject.get("hostPort");
+           // System.out.println("leilei"+ jsonObject.get("hostPort"));
+          
+            if(!Peer.availablePeers.containsKey(PeerJson)){
+            		
+            	Peer.availablePeers.put(PeerJson.toString(),PeerJson);
+                	System.out.println("Because of the handshake response, availablePeers is identified" + PeerJson.toString());
+            }
+            else {
+            	System.out.println("it is already an existed available peer");
 
+            }
+            System.out.println("available peer in peer2: "+ Peer.availablePeers.toString());
+            break;
+        }
+        case "INVALID_PROTOCOL":{
+        	JSONObject commandJson = connection.read();
+        	System.out.println();
+        	break;
+        }
+        case "CONNECTION_REFUSED":{
+        	break;
+        }
         default: {
-            JSONObject commandJson = CommandGroup.CommandMap.get("INVALID_PROTOCOL");
-            connection.send(commandJson.toString());
+           // JSONObject commandJson = CommandGroup.CommandMap.get("INVALID_PROTOCOL");
+        	String invaild = "{\"command\":\"INVALID_PROTOCOL\",\"message\":\"message must contain a command field as string\"}";
+            connection.send(invaild);
         }
         }
     }
@@ -279,25 +293,30 @@ class Client implements Runnable {
     private int port;
     private String command;
     public String[] peers = Configuration.getConfigurationValue("peers").split(",");;
-
+    
     public Client(String hostname, int port) {
         this.hostname = hostname;
         this.port = port;
 
     }
-
+    
     public void send(String serverIP, int serverPort, String command) {
         Socket s = null;
         try {
-            s = new Socket(hostname, port);
-            System.out.println("Connection Established");
-            System.out.println("Sending command");
+            s = new Socket(serverIP, serverPort);
+            System.out.println("Connection Established: " + serverIP + serverPort);
+            System.out.println("Sending command: " + command);
             DataInputStream in = new DataInputStream(s.getInputStream());
             DataOutputStream o = new DataOutputStream(s.getOutputStream());
             // PrintWriter out= new PrintWriter(s.getOutputStream(), true );
             // System.out.println(command);
             // JSONObject json = (JSONObject) new JSONParser().parse(command);
+            
             o.writeUTF(command);
+            
+            Connection connection = new Connection(s);
+          //  ConnectionManager connectionManager = new ConnectionManager();
+            ConnectionManager.getInstance().commandAnalysis(connection);
             // String r = in.readUTF();
             // System.out.println(r);
 
@@ -320,15 +339,16 @@ class Client implements Runnable {
                 }
         }
     }
-
+    
     public void run() {
 
         for (int i = 0; i < peers.length; i++) {
             String serverIP = peers[i].split(":")[0];
             int serverPort = Integer.parseInt(peers[i].split(":")[1]);
 
-            String handshake = "{\"hostport\":{\"port\":" + port + ",\"host\":" + hostname
-                    + "},\"command\":\"handshake\"}";
+            String handshake = "{\"hostPort\":{\"port\":" + port + ",\"host\":\"" + hostname 
+            		+ "\""
+                    + "},\"command\":\"HANDSHAKE_REQUEST\"}";
             send(serverIP, serverPort, handshake);
             System.out.println(handshake);
         }
@@ -350,7 +370,7 @@ public class Peer {
             .parseInt(Configuration.getConfigurationValue("maximumIncommingConnections"));
     private static final int synxInterval = Integer.parseInt(Configuration.getConfigurationValue("syncInterval"));
 
-    private ArrayList<Peer> AvailablePeers = new ArrayList<Peer>();
+    public static Map<String, JSONObject> availablePeers = new HashMap<>();
 
     // getter for all necessary attributes of the peer.
 
@@ -394,7 +414,7 @@ public class Peer {
         this.portNo = Integer.parseInt(Configuration.getConfigurationValue("port"));
         // this.peers = Configuration.getConfigurationValue("peers").split(",");
         // System.out.println(peers[0]);
-        CommandGroup commandGroup = new CommandGroup();
+    //    CommandGroup commandGroup = new CommandGroup();
     }
 
     public static void main(String[] args) throws IOException, NumberFormatException, NoSuchAlgorithmException {
@@ -412,14 +432,24 @@ public class Peer {
         Peer peer1 = new Peer();
         Server listen = new Server(peer1.portNo, peer1.maximumConnections);
         Thread listenThread = new Thread(listen);
+       // listenThread.setDaemon(true);
         listenThread.start();
-
+       
         ConnectionManager connectionManager = new ConnectionManager(listen);
         Thread connectionManagerThread = new Thread(connectionManager);
-        connectionManagerThread.start();
+        //connectionManagerThread.start();
+        
         Client send = new Client(peer1.address, peer1.portNo);
         Thread sendThread = new Thread(send);
+       // sendThread.setDaemon(true);
         sendThread.start();
+//        try {
+//			Thread.sleep(20000);
+//		} catch (InterruptedException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+        connectionManagerThread.start();
         /* listening testing */
         // peer1.listen();
         /* sending testing */
