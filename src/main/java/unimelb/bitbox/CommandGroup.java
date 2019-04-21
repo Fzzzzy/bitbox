@@ -1,6 +1,6 @@
 package unimelb.bitbox;
 
-import org.json.simple.JSONObject;
+import net.sf.json.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
@@ -39,7 +39,7 @@ public class CommandGroup {
                     "\"md5\":\"074195d72c47315efae797b69393e5e5\"," +
                     "\"lastModified\":1553417607000," +
                     "}," +
-                    "\"fileSize\":45787" +
+                    "\"fileSize\":45787," +
                     "\"pathName\":\"test.jpg\"}",
 
             "{\"command\":\"FILE_CREATE_RESPONSE\"," +
@@ -47,7 +47,7 @@ public class CommandGroup {
                     "\"md5\":\"074195d72c47315efae797b69393e5e5\"," +
                     "\"lastModified\":1553417607000," +
                     "}," +
-                    "\"fileSize\":45787" +
+                    "\"fileSize\":45787," +
                     "\"pathName\":\"test.jpg\"," +
                     "\"message\":\"file loader ready\"," +
                     "\"status\":true}",
@@ -57,7 +57,7 @@ public class CommandGroup {
                     "\"md5\":\"b1946ac92492d2347c6235b4d2611184\"," +
                     "\"lastModified\":1553417607000," +
                     "}," +
-                    "\"fileSize\":6" +
+                    "\"fileSize\":6," +
                     "\"pathName\":\"hello.txt\"," +
                     "\"position\":0," +
                     "\"length\":6}",
@@ -71,7 +71,7 @@ public class CommandGroup {
                     "\"pathName\":\"hello.txt\"," +
                     "\"position\":0," +
                     "\"length\":6," +
-                    "\"content\":\"aGVsbG8K\"" +
+                    "\"content\":\"aGVsbG8K\"," +
                     "\"message\":\"successful read\"," +
                     "\"status\":true}",
 
@@ -80,7 +80,7 @@ public class CommandGroup {
                     "}," +
                     "\"md5\":\"074195d72c47315efae797b69393e5e5\"," +
                     "\"lastModified\":1553417607000," +
-                    "\"fileSize\":45787" +
+                    "\"fileSize\":45787," +
                     "\"pathName\":\"test.jpg\"}",
 
             "{\"command\":\"FILE_DELETE_RESPONSE\"," +
@@ -88,7 +88,7 @@ public class CommandGroup {
                     "\"md5\":\"074195d72c47315efae797b69393e5e5\"," +
                     "\"lastModified\":1553417607000," +
                     "}," +
-                    "\"fileSize\":45787" +
+                    "\"fileSize\":45787," +
                     "\"pathName\":\"test.jpg\"," +
                     "\"message\":\"pathname does not exist\"," +
                     "\"status\":false}",
@@ -98,7 +98,7 @@ public class CommandGroup {
                     "}," +
                     "\"md5\":\"d35eab5dd9cb8b0d467c7e742c9b8c4c\"," +
                     "\"lastModified\":1553417617000," +
-                    "\"fileSize\":46787" +
+                    "\"fileSize\":46787," +
                     "\"pathName\":\"test.jpg\"}",
 
             "{\"command\":\"FILE_MODIFY_RESPONSE\"," +
@@ -106,7 +106,7 @@ public class CommandGroup {
                     "\"md5\":\"074195d72c47315efae797b69393e5e5\"," +
                     "\"lastModified\":1553417607000," +
                     "}," +
-                    "\"fileSize\":45787" +
+                    "\"fileSize\":45787," +
                     "\"pathName\":\"test.jpg\"," +
                     "\"message\":\"file loader ready\"," +
                     "\"status\":true}",
@@ -135,15 +135,14 @@ public class CommandGroup {
     {
 
        for(int i=0; i<CommandString.length; i++) {
-            try {
-              JSONObject json;
-               json = (JSONObject) new JSONParser().parse(CommandString[i]);
-                String key = CommandString[i];
-              this.CommandMap.put(key, json);
-            }catch (ParseException e)
-            {
-                System.out.println("parse failed");
-            }
+        
+               //json = (JSONObject) new JSONParser().parse(CommandString[i]);
+               JSONObject jsonObject=JSONObject.fromObject(CommandString[i]); 
+
+               
+                String key = jsonObject.getString("command");
+                //System.out.println("Key: "+ key);
+              this.CommandMap.put(key, jsonObject);
         }
    }
 
