@@ -36,11 +36,11 @@ public class CommandGroup {
 
             "{\"command\":\"FILE_CREATE_REQUEST\"," +
                     "\"fileDescriptor\":{" +
-                    "\"md5\":\"\"," +
-                    "\"lastModified\":0," +
-                    "\"fileSize\":0" +
+                    "\"md5\":\"074195d72c47315efae797b69393e5e5\"," +
+                    "\"lastModified\":1553417607000," +
                     "}," +
-                    "\"pathName\":\"\"}",
+                    "\"fileSize\":45787" +
+                    "\"pathName\":\"test.jpg\"}",
 
             "{\"command\":\"FILE_CREATE_RESPONSE\"," +
                     "\"fileDescriptor\":{" +
@@ -129,6 +129,10 @@ public class CommandGroup {
                     "\"message\":\"directory deleted\"," +
                     "\"status\":true}"
     };
+
+
+
+
 
     public CommandGroup()
     {
