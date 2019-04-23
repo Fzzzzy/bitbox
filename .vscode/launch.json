@@ -6,7 +6,6 @@
             "request": "launch",
             "mainClass": "unimelb.bitbox.Peer",
             "projectName": "bitbox",
-            "console": "integratedTerminal"
         }
     ]
 }

@@ -1,10 +1,14 @@
 package unimelb.bitbox;
 
+import static org.junit.Assume.assumeNoException;
+
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.logging.Logger;
 
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import unimelb.bitbox.util.Configuration;
 import unimelb.bitbox.util.FileSystemManager;
@@ -26,7 +30,14 @@ public class ServerMain implements FileSystemObserver {
 
 		switch (event) {
 		case FILE_CREATE:
-			getFileRequestFormat(fileSystemEvent);
+			JSONObject json = getFileRequestFormat(fileSystemEvent);
+			try {
+				ConnectionHost.sendAll(json);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			// send to the peers
 			break;
 		case FILE_MODIFY:
 			getFileRequestFormat(fileSystemEvent);
@@ -47,7 +58,6 @@ public class ServerMain implements FileSystemObserver {
 		// Thread sendThread = new Thread(send);
 		// sendThread.start();
 	}
-
 
 	public JSONObject getDirRequestFormat(FileSystemEvent fileSystemEvent) {
 		/**
@@ -76,6 +86,47 @@ public class ServerMain implements FileSystemObserver {
 		json.put("pathName", fileSystemEvent.path);
 
 		System.out.println(json.toString());
+		return json;
+	}
+
+	public JSONObject fileCreateResponse(JSONObject request) throws NoSuchAlgorithmException, IOException {
+		//send to the client
+		JSONObject json = new JSONObject();
+		JSONObject description = new JSONObject();
+
+		//resolving
+		JSONObject des = (JSONObject) request.get("fileDescriptor");
+		String name = (String) request.get("pathName");
+		String md5 = (String) des.get("md5");
+		long lm = (long) des.get("lastModified");
+		long size = (long) des.get("fileSize");
+
+		description.put("md5", md5);
+		description.put("lastModified", lm);
+		description.put("fileSize", size);
+		json.put("command", "FILE_CREATE_RESPONSE");
+		json.put("pathName", name);
+
+		boolean ready = false;
+		if (fileSystemManager.isSafePathName(name)) {
+			if (!fileSystemManager.fileNameExists(name)) {
+				if (fileSystemManager.createFileLoader(name, md5, size, lm)) {
+					json.put("message", "file loader ready");
+					ready = true;
+				} else {
+					json.put("message", "file loader notready");
+				}
+			} else {
+				json.put("message", "pathname already exists");
+			}
+			
+		} else {
+			json.put("message", "unsafe pathname given");
+		}
+		json.put("status", ready);
+
+
+		// send to the client
 		return json;
 	}
 }

@@ -8,21 +8,21 @@ import org.json.simple.parser.ParseException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-
 //   need executionpool, need to deal with each connection
 // need to unify the value of ConnectionList and ConnectedPeers
 
-public class ConnectionHost implements Runnable
-{
+public class ConnectionHost implements Runnable {
     Boolean flag = true;
-    private  static ArrayList<JSONObject> ConnectedPeers;
-    public  static  ArrayList<Connection> ServerConnectionList;
-    public  static  ArrayList<Connection> ClientConnectionList;
+    private static ArrayList<JSONObject> ConnectedPeers;
+    public static ArrayList<Connection> ServerConnectionList;
+    public static ArrayList<Connection> ClientConnectionList;
+    public static ServerMain fileOperator;
 
     public static ArrayList<JSONObject> getConnectedPeers() {
         return ConnectedPeers;
@@ -31,39 +31,30 @@ public class ConnectionHost implements Runnable
     // for transmitting all updating messages
     public static void sendAll(JSONObject json) throws IOException {
 
-        for(Connection connection :ConnectionMap.values())
-        {
+        for (Connection connection : ConnectionMap.values()) {
             connection.sendJson(json);
         }
     }
-
 
     private static int maximumConnections;
     private static final JSONParser parser = new JSONParser();
     private static ServerSide serverSide;
     private static ClientSide clientSide;
 
-
     public static HashMap<JSONObject, Connection> getConnectionMap() {
         return ConnectionMap;
     }
 
-    //   the map of connection and client name on the server side
-    private static HashMap<JSONObject,Connection> ConnectionMap;
+    // the map of connection and client name on the server side
+    private static HashMap<JSONObject, Connection> ConnectionMap;
 
-
-
-    public static boolean RemoveMapByConnection(Connection c)
-    {
-        if(ConnectionMap.containsValue(c)) {
+    public static boolean RemoveMapByConnection(Connection c) {
+        if (ConnectionMap.containsValue(c)) {
             ConnectionMap.values().remove(c);
             return true;
-        }
-        else
-            return  false;
+        } else
+            return false;
     }
-
-
 
     public static int getConnectionNum() {
         return ServerConnectionList.size();
@@ -73,40 +64,28 @@ public class ConnectionHost implements Runnable
         return maximumConnections;
     }
 
-
-    public synchronized static void AddConnectedPeers(JSONObject peer, Connection c){
-        if (!ConnectedPeers.contains(peer))
-        {
+    public synchronized static void AddConnectedPeers(JSONObject peer, Connection c) {
+        if (!ConnectedPeers.contains(peer)) {
             ConnectedPeers.add(peer);
-            ConnectionMap.put(peer,c);
-        }
-        else
-        {
+            ConnectionMap.put(peer, c);
+        } else {
             System.out.println("connection already exists !");
         }
 
     }
 
-    public synchronized static void RemoveConnectedPeers(String peer, Connection c)
-    {
-        if (!ConnectedPeers.contains(peer))
-        {
+    public synchronized static void RemoveConnectedPeers(String peer, Connection c) {
+        if (!ConnectedPeers.contains(peer)) {
             ConnectedPeers.remove(peer);
-            ConnectionMap.remove(peer,c);
-        }
-        else
-        {
+            ConnectionMap.remove(peer, c);
+        } else {
             System.out.println("connection doesn't exists !");
         }
     }
 
-
-
-
-
-
-    public ConnectionHost(Peer peer)
+    public ConnectionHost(Peer peer) throws NumberFormatException, NoSuchAlgorithmException, IOException
     {
+        fileOperator = new ServerMain();
         ServerConnectionList= new ArrayList<>();
         ClientConnectionList = new ArrayList<>();
         ConnectionMap = new HashMap<>();
