@@ -20,15 +20,23 @@ import java.util.Map;
 public class ConnectionHost implements Runnable
 {
     Boolean flag = true;
-
     private  static ArrayList<JSONObject> ConnectedPeers;
     public  static  ArrayList<Connection> ServerConnectionList;
     public  static  ArrayList<Connection> ClientConnectionList;
 
-
     public static ArrayList<JSONObject> getConnectedPeers() {
         return ConnectedPeers;
     }
+
+    // for transmitting all updating messages
+    public static void sendAll(JSONObject json) throws IOException {
+
+        for(Connection connection :ConnectionMap.values())
+        {
+            connection.sendJson(json);
+        }
+    }
+
 
     private static int maximumConnections;
     private static final JSONParser parser = new JSONParser();
@@ -136,13 +144,8 @@ public class ConnectionHost implements Runnable
             ClientConnectionList.remove(con);
     }
 
-
-
-
     public void run() {
         while (flag) {
-
-
 
         }
     }
