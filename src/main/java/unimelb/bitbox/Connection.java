@@ -19,7 +19,6 @@ public class Connection implements Runnable {
     boolean flag = true;
 
     public Connection (Socket socket) {
-
         try {
             this.clientSocket = socket;
             this.outwriter = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), "UTF-8"),true);
@@ -44,7 +43,6 @@ public class Connection implements Runnable {
     }
 
 
-
     // only for Response or Request
     public void send(String command) throws IOException {
         outwriter = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), "UTF-8"));
@@ -52,7 +50,6 @@ public class Connection implements Runnable {
         CommandGroup commands = new CommandGroup();
         int port = clientSocket.getLocalPort();
         String address =  clientSocket.getLocalAddress().toString().split("/",2)[1];
-
 
         JSONObject HostingPeer = new JSONObject();
         HostingPeer.put("host", address);
@@ -64,8 +61,18 @@ public class Connection implements Runnable {
         }
         outwriter.println(jObj.toJSONString());
         outwriter.flush();
-        outwriter.close();
     }
+
+    // send json files related to the file activity
+    public void sendJson(JSONObject json) throws IOException {
+        outwriter = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), "UTF-8"));
+        JSONObject jObj = json;
+        outwriter.println(jObj.toJSONString());
+        outwriter.flush();
+    }
+
+
+
 
 
 
@@ -104,12 +111,10 @@ public class Connection implements Runnable {
         JSONObject inComingPeer;
         while(flag) {
             try {
-                if (inreader.ready())
-                {
                     data = inreader.readLine();
                     if (data != null) {
                         JSONObject json = new JSONObject();
-                         json = (JSONObject) new JSONParser().parse(data);
+                        json = (JSONObject) new JSONParser().parse(data);
                         inComingPeer = (JSONObject) json.get("hostPort");
                         command = json.get("command").toString();
 
@@ -127,7 +132,6 @@ public class Connection implements Runnable {
                                         ConnectionHost.ServerConnectionList.add(this);
                                         ConnectionHost.AddConnectedPeers(inComingPeer, this);
                                     } else {
-                                  send("HANDSHAKE_RESPONSE");
                                         if (ConnectionHost.ServerConnectionList.contains(this))
                                             ConnectionHost.ServerConnectionList.remove(this);
                                     }
@@ -138,6 +142,7 @@ public class Connection implements Runnable {
                                 ConnectionHost.AddConnectedPeers(inComingPeer, this);
                                 ConnectionHost.ClientConnectionList.add(this);
                                 System.out.println("connection established");
+
                                 break;
                             }
                             case "INVALID_PROTOCOL": {
@@ -150,6 +155,11 @@ public class Connection implements Runnable {
                                 System.out.println("connection been refused by incoming limit");
                                 this.ConnectionClose();
                                 break;
+                            }
+
+                            case "FILE_CREATE_REQUEST":
+                            {
+                                System.out.println("FILE_CREATE_REQUEST received");
                             }
 
 
@@ -204,7 +214,7 @@ public class Connection implements Runnable {
                         System.out.println("outgoing connection num :" + ConnectionHost.ClientConnectionList.size());
 
                     }
-                }
+
 
             } catch (ParseException e) {
                 e.printStackTrace();
