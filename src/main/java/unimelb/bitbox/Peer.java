@@ -69,6 +69,8 @@ public class Peer {
          */
 
         Peer peer1 = new Peer();
+
+        // new ServerMain() in the constructor of ConnectionHost
         ConnectionHost host = new ConnectionHost(peer1);
         Thread HostThread = new Thread(host);
         HostThread.start();

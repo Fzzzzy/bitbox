@@ -146,27 +146,19 @@ public class Connection implements Runnable {
                         System.out.println("FILE_CREATE_REQUEST received");
                         JSONObject j = ConnectionHost.fileOperator.fileCreateResponse(json);
                         sendJson(j);
-
+                        break;
                     }
 
-                    //
-                    // case "FILE_CREATE_REQUEST":
-                    // {
-                    // // issafepathname filenameexist -> check the file managerment system
-                    // // respond, failed-> status. other message-> return the as the methods
-                    // returns
-                    //
-                    // //success: createFileLoader, checkshortcut
-                    // // stop, use the local copy or start requesting bytes
-                    //
-                    // break;
-                    // }
-                    //
-                    //
+                    case "FILE_CREATE_RESPONSE":
+                    {
+                        System.out.println(json.get("message").toString());
+                        break;
+                    }
+                    
+                    
                     // case "FILE_BYTES_RESPONSE":
-                    // {
-                    // // writefile check filecomplete.. untill-> complete
-                    // break;
+                    // {   
+                        
                     // }
                     //
                     // case "FILE_DELETE_REQUEST":
