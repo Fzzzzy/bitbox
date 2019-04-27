@@ -36,7 +36,6 @@ public class Connection implements Runnable {
             out.close();
             clientSocket.close();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
@@ -147,9 +146,9 @@ public class Connection implements Runnable {
                         // if the file loader is ready, ask for file bytes
                         if (response.get("message") == "file loader ready") {
                             JSONObject byteRequest = ConnectionHost.fileOperator.fileBytesRequest(response);
-                            if (byteRequest == new JSONObject()) {
+                            if (byteRequest.get("command") == null) {
                                 System.out.println("file writing is finished.");
-                                this.ConnectionClose();
+                                // this.ConnectionClose();
                             } else {
                                 sendJson(byteRequest);
                                 System.out.println("FILE_BYTES_REQUEST sended.");
@@ -178,7 +177,7 @@ public class Connection implements Runnable {
                         System.out.println("FILE_BYTES_RESPONSE received.");
                         if (json.get("status").toString() == "true") {
                             JSONObject byteRequest = ConnectionHost.fileOperator.fileBytesRequest(json);
-                            if (byteRequest.get("command").toString() == null) {
+                            if (byteRequest.get("command") == null) {
                                 System.out.println("file writing is finished.");
                                 // this.ConnectionClose();
                             } else {

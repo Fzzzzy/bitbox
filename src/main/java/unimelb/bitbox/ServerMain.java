@@ -191,7 +191,7 @@ public class ServerMain implements FileSystemObserver {
 
 		JSONObject des = new JSONObject();
 		des.put("md5", initialDes.get("md5"));
-		des.put("lastModified", initialDes.get("md5"));
+		des.put("lastModified", initialDes.get("lastModified"));
 		json.put("length", length);
 		json.put("pathName", response.get("pathName"));
 		json.put("fileSize", initialDes.get("fileSize"));
@@ -221,6 +221,11 @@ public class ServerMain implements FileSystemObserver {
 		long position = (long) Integer.parseInt(position_);
 		String length_ = request.get("length").toString();
 		long length = (long) Integer.parseInt(length_);
+		long fileSize = Integer.parseInt(request.get("fileSize").toString());
+
+		if (fileSize - position < length) {
+			length = fileSize - position;
+		}
 
 		try {
 			bb = fileSystemManager.readFile(md5, position, length);
@@ -232,14 +237,14 @@ public class ServerMain implements FileSystemObserver {
 			e.printStackTrace();
 		}
 
-		byte[] bt = bb.array();
-		String content = Base64.getEncoder().encodeToString(bt);
-
-		json.put("content", content);
 		if (bb == null) {
 			json.put("message", "unsuccessful read");
 			json.put("status", false);
 		} else {
+			// base64 encode
+			byte[] bt = bb.array();
+			String content = Base64.getEncoder().encodeToString(bt);
+			json.put("content", content);
 			json.put("message", "successful read");
 			json.put("status", true);
 		}
