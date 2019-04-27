@@ -1,6 +1,5 @@
 package unimelb.bitbox;
 
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -36,7 +35,6 @@ public class Connection implements Runnable {
             in.close();
             out.close();
             clientSocket.close();
-            // 把当前链接从管理链接中移除
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -91,13 +89,13 @@ public class Connection implements Runnable {
     @Override
     public void run() {
         String command;
-        String info = null;
         String data = null; // read a line of data from the stream
         JSONObject inComingPeer;
         while (flag) {
             try {
                 data = inreader.readLine();
                 if (data != null) {
+                    System.out.println(data);
                     JSONObject json = new JSONObject();
                     json = (JSONObject) new JSONParser().parse(data);
                     inComingPeer = (JSONObject) json.get("hostPort");
@@ -113,7 +111,7 @@ public class Connection implements Runnable {
                         } else {
                             if (ConnectionHost.getConnectionNum() <= ConnectionHost.getMaximumConnections()) {
                                 send("HANDSHAKE_RESPONSE");
-                                System.out.println("Handshake response sent !");
+                                System.out.println("Handshake response sent!");
                                 ConnectionHost.ServerConnectionList.add(this);
                                 ConnectionHost.AddConnectedPeers(inComingPeer, this);
                             } else {
@@ -126,41 +124,71 @@ public class Connection implements Runnable {
                     case "HANDSHAKE_RESPONSE": {
                         ConnectionHost.AddConnectedPeers(inComingPeer, this);
                         ConnectionHost.ClientConnectionList.add(this);
-                        System.out.println("connection established");
+                        System.out.println("connection established.");
 
                         break;
                     }
                     case "INVALID_PROTOCOL": {
-                        System.out.println("connection been refused by protocol problems");
+                        System.out.println("connection been refused by protocol problems.");
                         this.ConnectionClose();
                         break;
                     }
 
                     case "CONNECTION_REFUSED": {
-                        System.out.println("connection been refused by incoming limit");
+                        System.out.println("connection been refused by incoming limit.");
                         this.ConnectionClose();
                         break;
                     }
 
                     case "FILE_CREATE_REQUEST": {
-                        System.out.println("FILE_CREATE_REQUEST received");
-                        JSONObject j = ConnectionHost.fileOperator.fileCreateResponse(json);
-                        sendJson(j);
+                        System.out.println("FILE_CREATE_REQUEST received.");
+                        JSONObject response = ConnectionHost.fileOperator.fileCreateResponse(json);
+
+                        // if the file loader is ready, ask for file bytes
+                        if (response.get("message") == "file loader ready") {
+                            JSONObject byteRequest = ConnectionHost.fileOperator.fileBytesRequest(response);
+                            if (byteRequest == new JSONObject()) {
+                                System.out.println("file writing is finished.");
+                                this.ConnectionClose();
+                            } else {
+                                sendJson(byteRequest);
+                                System.out.println("FILE_BYTES_REQUEST sended.");
+                            }
+                        }
                         break;
                     }
 
-                    case "FILE_CREATE_RESPONSE":
-                    {
+                    case "FILE_CREATE_RESPONSE": {
                         System.out.println(json.get("message").toString());
+                        // if (json.get("status") == "false") {
+                        // this.ConnectionClose();
+                        // }
                         break;
                     }
-                    
-                    
-                    // case "FILE_BYTES_RESPONSE":
-                    // {   
-                        
-                    // }
-                    //
+
+                    case "FILE_BYTES_REQUEST": {
+                        System.out.println("FILE_BYTES_REQUEST received.");
+                        JSONObject response = ConnectionHost.fileOperator.fileBytesResponse(json);
+                        sendJson(response);
+                        System.out.println("FILE_BYTES_RESPONSE sended.");
+                        break;
+                    }
+
+                    case "FILE_BYTES_RESPONSE": {
+                        System.out.println("FILE_BYTES_RESPONSE received.");
+                        if (json.get("status").toString() == "true") {
+                            JSONObject byteRequest = ConnectionHost.fileOperator.fileBytesRequest(json);
+                            if (byteRequest.get("command").toString() == null) {
+                                System.out.println("file writing is finished.");
+                                // this.ConnectionClose();
+                            } else {
+                                sendJson(byteRequest);
+                                System.out.println("FILE_BYTES_REQUEST sended.");
+                            }
+                        }
+                        break;
+                    }
+
                     // case "FILE_DELETE_REQUEST":
                     // {
                     // // // issafepathname filenameexist -> check the file managerment system
@@ -214,5 +242,4 @@ public class Connection implements Runnable {
         }
     }
 
-  
 }

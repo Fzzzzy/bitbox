@@ -376,7 +376,7 @@ public class FileSystemManager extends Thread {
 	/**
 	   * Create a file loader for given file name. The file name must not
 	   * already exist, otherwise use {@link #modifyFileLoader(String, String, long)}.
-	   * The file loader maintains a place holder file with prefix {@link #loadingSuffix}
+	   * The file loader maintains a place holder file with prefix {@link #loadingSuffix()}
 	   * on its filename, called a <i>loader file</i>. Such files never generate file system events. The file loader
 	   * can be subsequently accessed via the given name using {@link #writeFile(String, ByteBuffer, long)},
 	   * {@link #checkWriteComplete(String)} and {@link #checkShortcut(String)}.
