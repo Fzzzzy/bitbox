@@ -48,6 +48,11 @@ public class ServerMain implements FileSystemObserver {
 
 		case FILE_DELETE:
 			json = getFileRequestFormat(fileSystemEvent);
+			try {
+				ConnectionHost.sendAll(json);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			break;
 		case DIRECTORY_CREATE:
 			json = getDirRequestFormat(fileSystemEvent);
@@ -136,6 +141,47 @@ public class ServerMain implements FileSystemObserver {
 
 		return json;
 	}
+	
+	// response for file deleting
+	public JSONObject fileDeleteResponse(JSONObject request) throws NoSuchAlgorithmException, IOException {
+			JSONObject json = new JSONObject();
+			JSONObject description = new JSONObject();
+
+			// resolve request
+			JSONObject des = (JSONObject) request.get("fileDescriptor");
+			String name = (String) request.get("pathName");
+			String md5 = (String) des.get("md5");
+			long lm = (long) des.get("lastModified");
+			long size = (long) des.get("fileSize");
+
+			description.put("md5", md5);
+			description.put("lastModified", lm);
+			description.put("fileSize", size);
+			json.put("command", "FILE_DELETE_RESPONSE");
+			json.put("pathName", name);
+			json.put("fileDescriptor", description);
+
+			boolean ready = false;
+			if (fileSystemManager.isSafePathName(name)) {
+				if (fileSystemManager.fileNameExists(name)) {
+					if (fileSystemManager.deleteFile(name, lm, md5)) {
+						json.put("message", "file deleted");
+						ready = true;
+					} else {
+						json.put("message", "there was a problem deleting the file");
+					}
+				} else {
+					json.put("message", "pathname does not exist");
+				}
+
+			} else {
+				json.put("message", "unsafe pathname given");
+			}
+			json.put("status", ready);
+
+			return json;
+		}
+
 
 	public JSONObject fileBytesRequest(JSONObject response) {
 		JSONObject json = new JSONObject();
@@ -284,4 +330,35 @@ public class ServerMain implements FileSystemObserver {
 		// check shortcut??
 		return json;
 	}
+	
+	// response for directory deleting
+	public JSONObject dirDeleteResponse(JSONObject request) throws NoSuchAlgorithmException, IOException {
+				JSONObject json = new JSONObject();
+				
+				// resolve request
+				String name = (String) request.get("pathName");
+				json.put("command", "DIRECTORY_DELETE_RESPONSE");
+				json.put("pathName", name);
+				
+				boolean ready = false;
+				if (fileSystemManager.isSafePathName(name)) {
+					if (fileSystemManager.dirNameExists(name)) {
+						if (fileSystemManager.deleteDirectory(name)) {
+							json.put("message", "directory deleted");
+							ready = true;
+						} else {
+							json.put("message", "there was a problem deleting the directory");
+						}
+					} else {
+						json.put("message", "pathname does not exist");
+					}
+
+				} else {
+					json.put("message", "unsafe pathname given");
+				}
+				json.put("status", ready);
+
+				return json;
+			}
+
 }
