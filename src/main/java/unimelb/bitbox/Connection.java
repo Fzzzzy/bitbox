@@ -10,8 +10,6 @@ import java.security.NoSuchAlgorithmException;
 
 // store and implement the basic functions for each connection
 public class Connection implements Runnable {
-    DataInputStream in;
-    DataOutputStream out;
     private BufferedReader inreader;
     private PrintWriter outwriter;
     Socket clientSocket;
@@ -32,8 +30,6 @@ public class Connection implements Runnable {
             flag = false;
             inreader.close();
             outwriter.close();
-            in.close();
-            out.close();
             clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -68,22 +64,6 @@ public class Connection implements Runnable {
         outwriter.flush();
     }
 
-    /*
-     * 
-     * String data = inreader.readLine(); // read a line of data from the stream
-     * while(!flag && data!=null) {
-     * 
-     * JSONObject json = (JSONObject) new JSONParser().parse(data); // outnumbered
-     * new peers' handshake if (json.get("COMMAND").equals("HANDSHAKE_REQUEST")) if
-     * (this.getConnectionNum() <= this.getMaximumConnections()) {
-     * System.out.println("Handshake received !"); this.ServerConnectionList.add(c);
-     * String peerName = json.get("hostPort").toString(); } else {
-     * c.send("CONNECTION_REFUSED"); c.ConnectionClose(); }
-     * 
-     * System.out.println(ServerConnectionList.size()); data = inreader.readLine();
-     * 
-     * // this.executor.submit(c); }
-     */
 
     @Override
     public void run() {
@@ -107,22 +87,25 @@ public class Connection implements Runnable {
                         if (ConnectionHost.getConnectedPeers().contains(inComingPeer)) {
                             send("INVALID_PROTOCOL");
                             System.out.println("replicated request!");
+                            if(ConnectionHost.ClientConnectionList.contains(ConnectionHost.getConnectionMap().get(inComingPeer)) )
+                                this.ConnectionClose();
                         } else {
                             if (ConnectionHost.getConnectionNum() <= ConnectionHost.getMaximumConnections()) {
                                 send("HANDSHAKE_RESPONSE");
                                 System.out.println("Handshake response sent!");
-                                ConnectionHost.ServerConnectionList.add(this);
+                                ConnectionHost.AddServerConnectionList(this);
                                 ConnectionHost.AddConnectedPeers(inComingPeer, this);
                             } else {
-                                if (ConnectionHost.ServerConnectionList.contains(this))
-                                    ConnectionHost.ServerConnectionList.remove(this);
+                                send("CONNECTION_REFUSED");
+                                System.out.println("Handshake refused message sent");
+                                this.ConnectionClose();
                             }
                         }
                         break;
                     }
                     case "HANDSHAKE_RESPONSE": {
                         ConnectionHost.AddConnectedPeers(inComingPeer, this);
-                        ConnectionHost.ClientConnectionList.add(this);
+                        ConnectionHost.AddClientConnectionList(this);
                         System.out.println("connection established.");
 
                         break;
@@ -204,13 +187,19 @@ public class Connection implements Runnable {
                     // }
                     //
                     //
-                    // case "DIRECTORY_CREATE_REQUEST":
-                    // {
-                    // // issafepathname filenameexist -> check the file managerment system
-                    // // respond, failed-> status. other message-> return the as the methods
-                    // returns
-                    // break;
-                    // }
+                     case "DIRECTORY_CREATE_REQUEST":
+                     {
+                         System.out.println("DIRECTORY_CREATE_REQUEST received.");
+                         JSONObject response = ConnectionHost.fileOperator.dirCreateResponse(json);
+                         sendJson(response);
+                         System.out.println("DIRECTORY_CREATE_RESPONSE sended");
+                    }
+                    case "DIRECTORY_CREATE_RESPONSE":
+                        {
+                            System.out.println(json.get("message").toString());
+                            break;
+
+                        }
                     //
                     // case "DIRECTORY_DELETE_REQUEST":
                     // {
