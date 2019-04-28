@@ -51,6 +51,11 @@ public class ServerMain implements FileSystemObserver {
 			break;
 		case DIRECTORY_CREATE:
 			json = getDirRequestFormat(fileSystemEvent);
+			try {
+				ConnectionHost.sendAll(json);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			break;
 		case DIRECTORY_DELETE:
 			json = getDirRequestFormat(fileSystemEvent);
@@ -70,7 +75,6 @@ public class ServerMain implements FileSystemObserver {
 		JSONObject json = new JSONObject();
 		json.put("command", fileSystemEvent.event.toString() + "_REQUEST");
 		json.put("pathName", fileSystemEvent.pathName);
-
 		return json;
 	}
 
@@ -249,6 +253,35 @@ public class ServerMain implements FileSystemObserver {
 			json.put("status", true);
 		}
 
+		return json;
+	}
+
+	public JSONObject dirCreateResponse(JSONObject request) throws NoSuchAlgorithmException, IOException {
+		JSONObject json = new JSONObject();
+
+		// resolve request
+		String name = (String) request.get("pathName");
+		json.put("command", "DIRECTORY_CREATE_RESPONSE");
+		json.put("pathName", name);
+
+		boolean ready = false;
+		if (fileSystemManager.isSafePathName(name)) {
+			if (!fileSystemManager.dirNameExists(name)) {
+				if (fileSystemManager.makeDirectory(name)) {
+					json.put("message", "directory created");
+					ready = true;
+				} else {
+					json.put("message", "there was a problem creating the directory");
+				}
+			} else {
+				json.put("message", "pathname already exists");
+			}
+
+		} else {
+			json.put("message", "unsafe pathname given");
+		}
+		json.put("status", ready);
+		// check shortcut??
 		return json;
 	}
 }
