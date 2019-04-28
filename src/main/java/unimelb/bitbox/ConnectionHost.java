@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-//   need executionpool, need to deal with each connection
 // need to unify the value of ConnectionList and ConnectedPeers
 
 public class ConnectionHost implements Runnable {
@@ -35,9 +34,12 @@ public class ConnectionHost implements Runnable {
             connection.sendJson(json);
         }
     }
+    public synchronized  static void AddServerConnectionList(Connection c)
+    {
+        ServerConnectionList.add(c);
+    }
 
     private static int maximumConnections;
-    private static final JSONParser parser = new JSONParser();
     private static ServerSide serverSide;
     private static ClientSide clientSide;
 
@@ -48,7 +50,7 @@ public class ConnectionHost implements Runnable {
     // the map of connection and client name on the server side
     private static HashMap<JSONObject, Connection> ConnectionMap;
 
-    public static boolean RemoveMapByConnection(Connection c) {
+    public synchronized static boolean RemoveMapByConnection(Connection c) {
         if (ConnectionMap.containsValue(c)) {
             ConnectionMap.values().remove(c);
             return true;
@@ -56,11 +58,11 @@ public class ConnectionHost implements Runnable {
             return false;
     }
 
-    public static int getConnectionNum() {
+    public synchronized static int getConnectionNum() {
         return ServerConnectionList.size();
     }
 
-    public static int getMaximumConnections() {
+    public synchronized static int getMaximumConnections() {
         return maximumConnections;
     }
 
@@ -72,6 +74,11 @@ public class ConnectionHost implements Runnable {
             System.out.println("connection already exists !");
         }
 
+    }
+
+    public synchronized  static void AddClientConnectionList(Connection c)
+    {
+        ClientConnectionList.add(c);
     }
 
     public synchronized static void RemoveConnectedPeers(String peer, Connection c) {
