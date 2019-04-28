@@ -56,7 +56,6 @@ class ServerSide implements Runnable {
             try {
                 Socket clientSocket = serverSocket.accept();
                 Connection c = ConnectionHost.ServerConnection(clientSocket);
-                threadPool.submit(c);
                 threadPool.execute(c);
             } catch (IOException e) {
                 System.out.println("Listen socket:" + e.getMessage());
