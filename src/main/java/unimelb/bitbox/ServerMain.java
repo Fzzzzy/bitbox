@@ -68,9 +68,6 @@ public class ServerMain implements FileSystemObserver {
 		default:
 			break;
 		}
-		// Sending send = new Sending(Peer.getAddress(), Peer.getPortNo(), event);
-		// Thread sendThread = new Thread(send);
-		// sendThread.start();
 	}
 
 	public JSONObject getDirRequestFormat(FileSystemEvent fileSystemEvent) {
@@ -141,47 +138,88 @@ public class ServerMain implements FileSystemObserver {
 
 		return json;
 	}
-	
+
+	// response for file modifying
+	public JSONObject fileModifyResponse(JSONObject request) throws NoSuchAlgorithmException, IOException {
+		JSONObject json = new JSONObject();
+		JSONObject description = new JSONObject();
+
+		// resolve request
+		JSONObject des = (JSONObject) request.get("fileDescriptor");
+		String name = (String) request.get("pathName");
+		String md5 = (String) des.get("md5");
+		long lm = (long) des.get("lastModified");
+		long size = (long) des.get("fileSize");
+
+		description.put("md5", md5);
+		description.put("lastModified", lm);
+		description.put("fileSize", size);
+		json.put("command", "FILE_MODIFY_RESPONSE");
+		json.put("pathName", name);
+		json.put("fileDescriptor", description);
+
+		boolean ready = false;
+		if (fileSystemManager.isSafePathName(name)) {
+			if (fileSystemManager.fileNameExists(name)) {
+				if (fileSystemManager.modifyFileLoader(name, md5, lm)) {
+					json.put("message", "file loader ready");
+					ready = true;
+				} else {
+					json.put("message", "there was a problem modifying the file");
+				}
+			} else {
+				json.put("message", "pathname does not exist");
+			}
+
+		} else {
+			json.put("message", "unsafe pathname given");
+		}
+		json.put("status", ready);
+
+		// check shortcut??
+
+		return json;
+	}
+
 	// response for file deleting
 	public JSONObject fileDeleteResponse(JSONObject request) throws NoSuchAlgorithmException, IOException {
-			JSONObject json = new JSONObject();
-			JSONObject description = new JSONObject();
+		JSONObject json = new JSONObject();
+		JSONObject description = new JSONObject();
 
-			// resolve request
-			JSONObject des = (JSONObject) request.get("fileDescriptor");
-			String name = (String) request.get("pathName");
-			String md5 = (String) des.get("md5");
-			long lm = (long) des.get("lastModified");
-			long size = (long) des.get("fileSize");
+		// resolve request
+		JSONObject des = (JSONObject) request.get("fileDescriptor");
+		String name = (String) request.get("pathName");
+		String md5 = (String) des.get("md5");
+		long lm = (long) des.get("lastModified");
+		long size = (long) des.get("fileSize");
 
-			description.put("md5", md5);
-			description.put("lastModified", lm);
-			description.put("fileSize", size);
-			json.put("command", "FILE_DELETE_RESPONSE");
-			json.put("pathName", name);
-			json.put("fileDescriptor", description);
+		description.put("md5", md5);
+		description.put("lastModified", lm);
+		description.put("fileSize", size);
+		json.put("command", "FILE_DELETE_RESPONSE");
+		json.put("pathName", name);
+		json.put("fileDescriptor", description);
 
-			boolean ready = false;
-			if (fileSystemManager.isSafePathName(name)) {
-				if (fileSystemManager.fileNameExists(name)) {
-					if (fileSystemManager.deleteFile(name, lm, md5)) {
-						json.put("message", "file deleted");
-						ready = true;
-					} else {
-						json.put("message", "there was a problem deleting the file");
-					}
+		boolean ready = false;
+		if (fileSystemManager.isSafePathName(name)) {
+			if (fileSystemManager.fileNameExists(name)) {
+				if (fileSystemManager.deleteFile(name, lm, md5)) {
+					json.put("message", "file deleted");
+					ready = true;
 				} else {
-					json.put("message", "pathname does not exist");
+					json.put("message", "there was a problem deleting the file");
 				}
-
 			} else {
-				json.put("message", "unsafe pathname given");
+				json.put("message", "pathname does not exist");
 			}
-			json.put("status", ready);
 
-			return json;
+		} else {
+			json.put("message", "unsafe pathname given");
 		}
+		json.put("status", ready);
 
+		return json;
+	}
 
 	public JSONObject fileBytesRequest(JSONObject response) {
 		JSONObject json = new JSONObject();
@@ -190,15 +228,15 @@ public class ServerMain implements FileSystemObserver {
 		JSONObject initialDes = (JSONObject) response.get("fileDescriptor");
 
 		long length = 0;
-		System.out.println(response.get("command") == "FILE_BYTES_RESPONSE");
 
-		// response -> FILE_CREATE_RESPONSE
-		if (response.get("command") == "FILE_CREATE_RESPONSE") {
+		// response -> FILE_CREATE_RESPONSE & FILE_MODIFY_RESPONSE
+		if (response.get("command") == "FILE_CREATE_RESPONSE" || response.get("command") == "FILE_MODIFY_RESPONSE") {
 			json.put("position", 0);
-			// assume 10 bytes initially
-			length = 10;
+
+			length = Integer.parseInt(Configuration.getConfigurationValue("blockSize"));
 			String fs = initialDes.get("fileSize").toString();
 			Integer fs_ = Integer.parseInt(fs);
+
 			// if real fileSize < 10, change length to the fileSize
 			if (fs_ < 10) {
 				length = fs_;
@@ -330,35 +368,35 @@ public class ServerMain implements FileSystemObserver {
 		// check shortcut??
 		return json;
 	}
-	
+
 	// response for directory deleting
 	public JSONObject dirDeleteResponse(JSONObject request) throws NoSuchAlgorithmException, IOException {
-				JSONObject json = new JSONObject();
-				
-				// resolve request
-				String name = (String) request.get("pathName");
-				json.put("command", "DIRECTORY_DELETE_RESPONSE");
-				json.put("pathName", name);
-				
-				boolean ready = false;
-				if (fileSystemManager.isSafePathName(name)) {
-					if (fileSystemManager.dirNameExists(name)) {
-						if (fileSystemManager.deleteDirectory(name)) {
-							json.put("message", "directory deleted");
-							ready = true;
-						} else {
-							json.put("message", "there was a problem deleting the directory");
-						}
-					} else {
-						json.put("message", "pathname does not exist");
-					}
+		JSONObject json = new JSONObject();
 
+		// resolve request
+		String name = (String) request.get("pathName");
+		json.put("command", "DIRECTORY_DELETE_RESPONSE");
+		json.put("pathName", name);
+
+		boolean ready = false;
+		if (fileSystemManager.isSafePathName(name)) {
+			if (fileSystemManager.dirNameExists(name)) {
+				if (fileSystemManager.deleteDirectory(name)) {
+					json.put("message", "directory deleted");
+					ready = true;
 				} else {
-					json.put("message", "unsafe pathname given");
+					json.put("message", "there was a problem deleting the directory");
 				}
-				json.put("status", ready);
-
-				return json;
+			} else {
+				json.put("message", "pathname does not exist");
 			}
+
+		} else {
+			json.put("message", "unsafe pathname given");
+		}
+		json.put("status", ready);
+
+		return json;
+	}
 
 }

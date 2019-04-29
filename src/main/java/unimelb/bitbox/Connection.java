@@ -64,7 +64,6 @@ public class Connection implements Runnable {
         outwriter.flush();
     }
 
-
     @Override
     public void run() {
         String command;
@@ -74,7 +73,7 @@ public class Connection implements Runnable {
             try {
                 data = inreader.readLine();
                 if (data != null) {
-                    System.out.println(data);
+                    // System.out.println(data);
                     JSONObject json = new JSONObject();
                     json = (JSONObject) new JSONParser().parse(data);
                     inComingPeer = (JSONObject) json.get("hostPort");
@@ -87,7 +86,8 @@ public class Connection implements Runnable {
                         if (ConnectionHost.getConnectedPeers().contains(inComingPeer)) {
                             send("INVALID_PROTOCOL");
                             System.out.println("replicated request!");
-                            if(ConnectionHost.ClientConnectionList.contains(ConnectionHost.getConnectionMap().get(inComingPeer)) )
+                            if (ConnectionHost.ClientConnectionList
+                                    .contains(ConnectionHost.getConnectionMap().get(inComingPeer)))
                                 this.ConnectionClose();
                         } else {
                             if (ConnectionHost.getConnectionNum() <= ConnectionHost.getMaximumConnections()) {
@@ -96,7 +96,7 @@ public class Connection implements Runnable {
                                 ConnectionHost.ServerConnectionList.add(this);
                                 ConnectionHost.AddConnectedPeers(inComingPeer, this);
                             } else {
-                            	send("CONNECTION_REFUSED");
+                                send("CONNECTION_REFUSED");
                                 System.out.println("Handshake refused message sent");
                                 this.ConnectionClose();
                             }
@@ -125,6 +125,7 @@ public class Connection implements Runnable {
                     case "FILE_CREATE_REQUEST": {
                         System.out.println("FILE_CREATE_REQUEST received.");
                         JSONObject response = ConnectionHost.fileOperator.fileCreateResponse(json);
+                        sendJson(response);
 
                         // if the file loader is ready, ask for file bytes
                         if (response.get("message") == "file loader ready") {
@@ -142,9 +143,6 @@ public class Connection implements Runnable {
 
                     case "FILE_CREATE_RESPONSE": {
                         System.out.println(json.get("message").toString());
-                        // if (json.get("status") == "false") {
-                        // this.ConnectionClose();
-                        // }
                         break;
                     }
 
@@ -170,62 +168,74 @@ public class Connection implements Runnable {
                         }
                         break;
                     }
-                    
-                    case "FILE_DELETE_REQUEST":
-                    {
-                         System.out.println("FILE_DELETE_REQUEST received.");
-                         JSONObject response = ConnectionHost.fileOperator.fileDeleteResponse(json);
-                         sendJson(response);
-                         System.out.println("FILE_DELETE_RESPONSE sended");
-                         break;
+
+                    case "FILE_DELETE_REQUEST": {
+                        System.out.println("FILE_DELETE_REQUEST received.");
+                        JSONObject response = ConnectionHost.fileOperator.fileDeleteResponse(json);
+                        sendJson(response);
+                        System.out.println("FILE_DELETE_RESPONSE sended");
+                        break;
                     }
-                    case "FILE_DELETE_RESPONSE":
-                    {
-                    	System.out.println("FILE_DELETE_RESPONSE received.");
+                    case "FILE_DELETE_RESPONSE": {
+                        System.out.println("FILE_DELETE_RESPONSE received.");
                         break;
 
                     }
-                    
-                    // case "FILE_MODIFY_REQUEST":
-                    // {
-                    // // issafepathname filenameexist -> check the file managerment system
-                    // // respond, failed-> status. other message-> return the as the methods
-                    // returns -> response
-                    // break;
-                    // }
-                    //
-                    //
-                   case "DIRECTORY_CREATE_REQUEST":
-                   {
+
+                    case "FILE_MODIFY_REQUEST": {
+                        System.out.println("FILE_MODIFY_REQUEST received.");
+                        JSONObject response = ConnectionHost.fileOperator.fileModifyResponse(json);
+                        sendJson(response);
+
+                        // if the file loader is ready, ask for file bytes
+                        if (response.get("message") == "file loader ready") {
+                            JSONObject byteRequest = ConnectionHost.fileOperator.fileBytesRequest(response);
+                            if (byteRequest.get("command") == null) {
+                                System.out.println("file writing is finished.");
+                                // this.ConnectionClose();
+                            } else {
+                                sendJson(byteRequest);
+                                System.out.println("FILE_BYTES_REQUEST sended.");
+                            }
+                        }
+                        break;
+                    }
+
+                    case "FILE_MODIFY_RESPONSE": {
+                        System.out.println(json.get("message").toString());
+                        // if (json.get("status") == "false") {
+                        // this.ConnectionClose();
+                        // }
+                        break;
+                    }
+
+                    case "DIRECTORY_CREATE_REQUEST": {
                         System.out.println("DIRECTORY_CREATE_REQUEST received.");
                         JSONObject response = ConnectionHost.fileOperator.dirCreateResponse(json);
                         sendJson(response);
                         System.out.println("DIRECTORY_CREATE_RESPONSE sended");
                         break;
-                   }
-                   
-                   case "DIRECTORY_CREATE_RESPONSE":
-                   {
+                    }
+
+                    case "DIRECTORY_CREATE_RESPONSE": {
                         System.out.println(json.get("message").toString());
                         break;
 
-                   }
-                   
-                   case "DIRECTOR_DELETE_REQUEST":
-                   {
+                    }
+
+                    case "DIRECTOR_DELETE_REQUEST": {
                         System.out.println("DIRECTOR_DELETE_REQUEST received.");
                         JSONObject response = ConnectionHost.fileOperator.dirDeleteResponse(json);
                         sendJson(response);
                         System.out.println("DIRECTOR_DELETE_RESPONSE sended");
                         break;
-                   }
-                   case "DIRECTOR_DELETE_RESPONSE":
-                   {
-                   	   System.out.println("DIRECTOR_DELETE_RESPONSE received.");
-                       break;
+                    }
+                    case "DIRECTOR_DELETE_RESPONSE": {
+                        System.out.println("DIRECTOR_DELETE_RESPONSE received.");
+                        break;
 
-                   }
-                   
+                    }
+
                     }
                     System.out.println("incoming connection num :" + ConnectionHost.ServerConnectionList.size());
                     System.out.println("outgoing connection num :" + ConnectionHost.ClientConnectionList.size());
