@@ -3,12 +3,16 @@ package unimelb.bitbox;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.logging.Logger;
 
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import unimelb.bitbox.util.Configuration;
+import unimelb.bitbox.util.Document;
 import unimelb.bitbox.util.FileSystemManager;
 import unimelb.bitbox.util.FileSystemObserver;
 import unimelb.bitbox.util.FileSystemManager.EVENT;
@@ -20,6 +24,12 @@ public class ServerMain implements FileSystemObserver {
 
 	public ServerMain() throws NumberFormatException, IOException, NoSuchAlgorithmException {
 		fileSystemManager = new FileSystemManager(Configuration.getConfigurationValue("path"), this);
+		ArrayList<FileSystemEvent> pathevents = new ArrayList<FileSystemEvent>();
+		pathevents = fileSystemManager.generateSyncEvents();
+
+		for (FileSystemEvent e : pathevents) {
+			// do something
+		}
 	}
 
 	@Override
@@ -74,9 +84,16 @@ public class ServerMain implements FileSystemObserver {
 		/**
 		 * DIRECTORY_CREATE_REQUEST, DIRECTORY_DELETE_REQUEST
 		 */
+		Document doc = new Document();
+		doc.append("command", fileSystemEvent.event.toString() + "_REQUEST");
+		doc.append("pathName", fileSystemEvent.pathName);
 		JSONObject json = new JSONObject();
-		json.put("command", fileSystemEvent.event.toString() + "_REQUEST");
-		json.put("pathName", fileSystemEvent.pathName);
+		try {
+			json = (JSONObject) new JSONParser().parse(doc.toJson());
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+
 		return json;
 	}
 
@@ -134,8 +151,6 @@ public class ServerMain implements FileSystemObserver {
 		}
 		json.put("status", ready);
 
-		// check shortcut??
-
 		return json;
 	}
 
@@ -175,8 +190,6 @@ public class ServerMain implements FileSystemObserver {
 			json.put("message", "unsafe pathname given");
 		}
 		json.put("status", ready);
-
-		// check shortcut??
 
 		return json;
 	}
@@ -223,67 +236,80 @@ public class ServerMain implements FileSystemObserver {
 
 	public JSONObject fileBytesRequest(JSONObject response) {
 		JSONObject json = new JSONObject();
-		json.put("command", "FILE_BYTES_REQUEST");
 		String pathName = response.get("pathName").toString();
-		JSONObject initialDes = (JSONObject) response.get("fileDescriptor");
 
-		long length = 0;
+		Boolean shortcut = false;
+		try {
+			shortcut = fileSystemManager.checkShortcut(pathName);
+		} catch (NoSuchAlgorithmException e1) {
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
 
-		// response -> FILE_CREATE_RESPONSE & FILE_MODIFY_RESPONSE
-		if (response.get("command") == "FILE_CREATE_RESPONSE" || response.get("command") == "FILE_MODIFY_RESPONSE") {
-			json.put("position", 0);
+		if (!shortcut) {
+			json.put("command", "FILE_BYTES_REQUEST");
+			JSONObject initialDes = (JSONObject) response.get("fileDescriptor");
+			long length = 0;
 
-			length = Integer.parseInt(Configuration.getConfigurationValue("blockSize"));
-			String fs = initialDes.get("fileSize").toString();
-			Integer fs_ = Integer.parseInt(fs);
+			// response -> FILE_CREATE_RESPONSE & FILE_MODIFY_RESPONSE
+			if (response.get("command") == "FILE_CREATE_RESPONSE"
+					|| response.get("command") == "FILE_MODIFY_RESPONSE") {
+				json.put("position", 0);
 
-			// if real fileSize < 10, change length to the fileSize
-			if (fs_ < 10) {
-				length = fs_;
+				length = Integer.parseInt(Configuration.getConfigurationValue("blockSize"));
+				String fs = initialDes.get("fileSize").toString();
+				Integer fs_ = Integer.parseInt(fs);
+
+				// if real fileSize < 10, change length to the fileSize
+				if (fs_ < 10) {
+					length = fs_;
+				}
+
+				// response -> FILE_BYTES_RESPONSE
+			} else {
+				// base64 decode content
+				String content = response.get("content").toString();
+				byte[] decodedBytes = Base64.getDecoder().decode(content);
+				ByteBuffer buf = ByteBuffer.wrap(decodedBytes);
+
+				// format data
+				String pos_ = response.get("position").toString();
+				long position = (long) Integer.parseInt(pos_);
+				String len_ = response.get("length").toString();
+				length = Integer.parseInt(len_);
+
+				try {
+					fileSystemManager.writeFile(pathName, buf, position);
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				json.put("position", position + length);
 			}
 
-			// response -> FILE_BYTES_RESPONSE
-		} else {
-			// base64 decode content
-			String content = response.get("content").toString();
-			byte[] decodedBytes = Base64.getDecoder().decode(content);
-			ByteBuffer buf = ByteBuffer.wrap(decodedBytes);
-
-			// format data
-			String pos_ = response.get("position").toString();
-			long position = (long) Integer.parseInt(pos_);
-			String len_ = response.get("length").toString();
-			length = Integer.parseInt(len_);
-
+			boolean finish = false;
 			try {
-				fileSystemManager.writeFile(pathName, buf, position);
-			} catch (NumberFormatException e) {
+				finish = fileSystemManager.checkWriteComplete(pathName);
+				if (finish) {
+					return new JSONObject();
+				}
+			} catch (NoSuchAlgorithmException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			json.put("position", position + length);
-		}
 
-		boolean finish = false;
-		try {
-			finish = fileSystemManager.checkWriteComplete(pathName);
-			if (finish) {
-				return new JSONObject();
-			}
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+			JSONObject des = new JSONObject();
+			des.put("md5", initialDes.get("md5"));
+			des.put("lastModified", initialDes.get("lastModified"));
+			json.put("length", length);
+			json.put("pathName", response.get("pathName"));
+			json.put("fileSize", initialDes.get("fileSize"));
+			json.put("fileDescriptor", des);
 
-		JSONObject des = new JSONObject();
-		des.put("md5", initialDes.get("md5"));
-		des.put("lastModified", initialDes.get("lastModified"));
-		json.put("length", length);
-		json.put("pathName", response.get("pathName"));
-		json.put("fileSize", initialDes.get("fileSize"));
-		json.put("fileDescriptor", des);
+		}
 
 		return json;
 	}
@@ -365,7 +391,6 @@ public class ServerMain implements FileSystemObserver {
 			json.put("message", "unsafe pathname given");
 		}
 		json.put("status", ready);
-		// check shortcut??
 		return json;
 	}
 
