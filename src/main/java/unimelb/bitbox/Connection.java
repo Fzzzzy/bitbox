@@ -135,7 +135,7 @@ class Processing implements Runnable {
                         case "HANDSHAKE_REQUEST": {
                 inComingPeer = (JSONObject) json.get("hostPort");
                 c.ConnectingPeer= inComingPeer;
-                System.out.println("handshake received from " + inComingPeer);
+                System.out.println("handshake received from " + c.ConnectingPeer);
                 // unnecessary handshake
                 if (ConnectionHost.getConnectedPeers().contains(inComingPeer)) {
                     try {
@@ -190,7 +190,7 @@ class Processing implements Runnable {
             }
 
                     case "FILE_CREATE_REQUEST": {
-                        System.out.println("FILE_CREATE_REQUEST received.");
+                        System.out.println("FILE_CREATE_REQUEST received from " + c.ConnectingPeer);
                         JSONObject response = ConnectionHost.fileOperator.fileCreateResponse(json);
                         sendJson(response);
 
@@ -209,12 +209,12 @@ class Processing implements Runnable {
                     }
 
                     case "FILE_CREATE_RESPONSE": {
-                        System.out.println(json.get("message").toString());
+                        System.out.println(json.get("message").toString() + "from "+ c.ConnectingPeer);
                         break;
                     }
 
                     case "FILE_BYTES_REQUEST": {
-                        System.out.println("FILE_BYTES_REQUEST received.");
+                        System.out.println("FILE_BYTES_REQUEST received from "+ c.ConnectingPeer);
                         JSONObject response = ConnectionHost.fileOperator.fileBytesResponse(json);
                         sendJson(response);
                         System.out.println("FILE_BYTES_RESPONSE sended.");
@@ -222,7 +222,7 @@ class Processing implements Runnable {
                     }
 
                     case "FILE_BYTES_RESPONSE": {
-                        System.out.println("FILE_BYTES_RESPONSE received.");
+                        System.out.println("FILE_BYTES_RESPONSE received from "+ c.ConnectingPeer);
                         if (json.get("status").toString() == "true") {
                             JSONObject byteRequest = ConnectionHost.fileOperator.fileBytesRequest(json);
                             if (byteRequest.get("command") == null) {
@@ -237,20 +237,20 @@ class Processing implements Runnable {
                     }
 
                     case "FILE_DELETE_REQUEST": {
-                        System.out.println("FILE_DELETE_REQUEST received.");
+                        System.out.println("FILE_DELETE_REQUEST received from " + c.ConnectingPeer);
                         JSONObject response = ConnectionHost.fileOperator.fileDeleteResponse(json);
                         sendJson(response);
                         System.out.println("FILE_DELETE_RESPONSE sended");
                         break;
                     }
                     case "FILE_DELETE_RESPONSE": {
-                        System.out.println("FILE_DELETE_RESPONSE received.");
+                        System.out.println("FILE_DELETE_RESPONSE received from "+ c.ConnectingPeer);
                         break;
 
                     }
 
                     case "FILE_MODIFY_REQUEST": {
-                        System.out.println("FILE_MODIFY_REQUEST received.");
+                        System.out.println("FILE_MODIFY_REQUEST received from "+ c.ConnectingPeer);
                         JSONObject response = ConnectionHost.fileOperator.fileModifyResponse(json);
                         sendJson(response);
 
@@ -269,7 +269,7 @@ class Processing implements Runnable {
                     }
 
                     case "FILE_MODIFY_RESPONSE": {
-                        System.out.println(json.get("message").toString());
+                        System.out.println(json.get("message").toString()+ "from "+ c.ConnectingPeer);
                         // if (json.get("status") == "false") {
                         // this.ConnectionClose();
                         // }
@@ -277,7 +277,7 @@ class Processing implements Runnable {
                     }
 
                     case "DIRECTORY_CREATE_REQUEST": {
-                        System.out.println("DIRECTORY_CREATE_REQUEST received.");
+                        System.out.println("DIRECTORY_CREATE_REQUEST received from " + c.ConnectingPeer);
                         JSONObject response = ConnectionHost.fileOperator.dirCreateResponse(json);
                         sendJson(response);
                         System.out.println("DIRECTORY_CREATE_RESPONSE sended");
@@ -285,20 +285,20 @@ class Processing implements Runnable {
                     }
 
                     case "DIRECTORY_CREATE_RESPONSE": {
-                        System.out.println(json.get("message").toString());
+                        System.out.println(json.get("message").toString() + "from "+ c.ConnectingPeer);
                         break;
 
                     }
 
                     case "DIRECTORY_DELETE_REQUEST": {
-                        System.out.println("DIRECTORY_DELETE_REQUEST received.");
+                        System.out.println("DIRECTORY_DELETE_REQUEST received from "+ c.ConnectingPeer);
                         JSONObject response = ConnectionHost.fileOperator.dirDeleteResponse(json);
                         sendJson(response);
                         System.out.println("DIRECTORY_DELETE_RESPONSE sended");
                         break;
                     }
                     case "DIRECTORY_DELETE_RESPONSE": {
-                        System.out.println("DIRECTORY_DELETE_RESPONSE received.");
+                        System.out.println("DIRECTORY_DELETE_RESPONSE received from " + c.ConnectingPeer);
                         break;
 
                     }
