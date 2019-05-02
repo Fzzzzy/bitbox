@@ -223,15 +223,15 @@ public class Connection implements Runnable {
 
                     }
 
-                    case "DIRECTOR_DELETE_REQUEST": {
-                        System.out.println("DIRECTOR_DELETE_REQUEST received.");
+                    case "DIRECTORY_DELETE_REQUEST": {
+                        System.out.println("DIRECTORY_DELETE_REQUEST received.");
                         JSONObject response = ConnectionHost.fileOperator.dirDeleteResponse(json);
                         sendJson(response);
-                        System.out.println("DIRECTOR_DELETE_RESPONSE sended");
+                        System.out.println("DIRECTORY_DELETE_RESPONSE sended");
                         break;
                     }
-                    case "DIRECTOR_DELETE_RESPONSE": {
-                        System.out.println("DIRECTOR_DELETE_RESPONSE received.");
+                    case "DIRECTORY_DELETE_RESPONSE": {
+                        System.out.println("DIRECTORY_DELETE_RESPONSE received.");
                         break;
 
                     }
