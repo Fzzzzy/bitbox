@@ -178,6 +178,10 @@ public class Connection implements Runnable {
                     }
                     case "FILE_DELETE_RESPONSE": {
                         System.out.println("FILE_DELETE_RESPONSE received.");
+                        System.out.println(json.get("message").toString());
+                        if (json.get("status") == "false") {
+                        this.ConnectionClose();
+                        }
                         break;
 
                     }
@@ -203,9 +207,9 @@ public class Connection implements Runnable {
 
                     case "FILE_MODIFY_RESPONSE": {
                         System.out.println(json.get("message").toString());
-                        // if (json.get("status") == "false") {
-                        // this.ConnectionClose();
-                        // }
+                        if (json.get("status") == "false") {
+                        this.ConnectionClose();
+                        }
                         break;
                     }
 
@@ -218,7 +222,11 @@ public class Connection implements Runnable {
                     }
 
                     case "DIRECTORY_CREATE_RESPONSE": {
-                        System.out.println(json.get("message").toString());
+                    	System.out.println("DIRECTORY_CREATE_RESPONSE received");
+                    	System.out.println(json.get("message").toString());
+                        if (json.get("status") == "false") {
+                        this.ConnectionClose();
+                        }
                         break;
 
                     }
@@ -231,7 +239,11 @@ public class Connection implements Runnable {
                         break;
                     }
                     case "DIRECTORY_DELETE_RESPONSE": {
-                        System.out.println("DIRECTORY_DELETE_RESPONSE received.");
+                    	System.out.println("DIRECTORY_DELETE_RESPONSE received.");
+                    	System.out.println(json.get("message").toString());
+                        if (json.get("status") == "false") {
+                        this.ConnectionClose();
+                        }
                         break;
 
                     }
