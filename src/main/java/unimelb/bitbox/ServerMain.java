@@ -24,12 +24,12 @@ public class ServerMain implements FileSystemObserver {
 
 	public ServerMain() throws NumberFormatException, IOException, NoSuchAlgorithmException {
 		fileSystemManager = new FileSystemManager(Configuration.getConfigurationValue("path"), this);
-		ArrayList<FileSystemEvent> pathevents = new ArrayList<FileSystemEvent>();
-		pathevents = fileSystemManager.generateSyncEvents();
+		// ArrayList<FileSystemEvent> pathevents = new ArrayList<FileSystemEvent>();
+		// pathevents = fileSystemManager.generateSyncEvents();
 
-		for (FileSystemEvent e : pathevents) {
-			// do something
-		}
+		// for (FileSystemEvent e : pathevents) {
+		// 	// do something
+		// }
 	}
 
 	@Override
@@ -74,6 +74,11 @@ public class ServerMain implements FileSystemObserver {
 			break;
 		case DIRECTORY_DELETE:
 			json = getDirRequestFormat(fileSystemEvent);
+			try {
+				ConnectionHost.sendAll(json);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			break;
 		default:
 			break;
@@ -262,7 +267,7 @@ public class ServerMain implements FileSystemObserver {
 				Integer fs_ = Integer.parseInt(fs);
 
 				// if real fileSize < 10, change length to the fileSize
-				if (fs_ < 10) {
+				if (fs_ < length) {
 					length = fs_;
 				}
 

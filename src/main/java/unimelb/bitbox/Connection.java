@@ -73,7 +73,7 @@ public class Connection implements Runnable {
             try {
                 data = inreader.readLine();
                 if (data != null) {
-                    // System.out.println(data);
+                    System.out.println(data);
                     JSONObject json = new JSONObject();
                     json = (JSONObject) new JSONParser().parse(data);
                     inComingPeer = (JSONObject) json.get("hostPort");
