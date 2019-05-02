@@ -7,6 +7,9 @@ import org.json.simple.parser.ParseException;
 import java.io.*;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
+import java.util.LinkedList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 // store and implement the basic functions for each connection
 public class Connection implements Runnable {
@@ -14,6 +17,8 @@ public class Connection implements Runnable {
     private PrintWriter outwriter;
     Socket clientSocket;
     boolean flag = true;
+     public JSONObject ConnectingPeer;
+    protected ExecutorService ProcessingPool = Executors.newFixedThreadPool(10);
 
     public Connection(Socket socket) {
         try {
@@ -69,58 +74,120 @@ public class Connection implements Runnable {
         String command;
         String data = null; // read a line of data from the stream
         JSONObject inComingPeer;
-        while (flag) {
+          LinkedList<String>  tasks= new  LinkedList<String> ();
+   while (flag) {
             try {
                 data = inreader.readLine();
                 if (data != null) {
-                    System.out.println(data);
-                    JSONObject json = new JSONObject();
-                    json = (JSONObject) new JSONParser().parse(data);
-                    inComingPeer = (JSONObject) json.get("hostPort");
-                    command = json.get("command").toString();
+                    tasks.add(data);
+                    while (!tasks.isEmpty())
+                    {
+                        String singleTask = tasks.poll();
+                        System.out.println(singleTask);
+                        Processing process=new Processing(singleTask, flag, this);
+                        ProcessingPool.execute(process);
+                    }
+                }
 
+            }  catch (IOException e) {
+                if (ConnectionHost.ServerConnectionList.contains(this)) {
+                    ConnectionHost.ServerConnectionList.remove(this);
+                    ConnectionClose();
+                } else if (ConnectionHost.ClientConnectionList.contains(this)) {
+                    ConnectionHost.ClientConnectionList.remove(this);
+                    ConnectionClose();
+                }
+                ConnectionHost.RemoveMapByConnection(this);
+
+                e.printStackTrace();
+            }
+        }
+    }
+}
+
+
+
+class Processing implements Runnable {
+    String data;
+    Connection c;
+    Boolean flag;
+
+
+    public Processing ( String data, Boolean flag, Connection c)
+    {
+        this.data=data;
+        this.flag= flag;
+        this.c=c;
+    }
+    public void run()
+    {
+               JSONObject json = new JSONObject();
+        try {
+            json = (JSONObject) new JSONParser().parse(data);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        JSONObject  inComingPeer = new JSONObject();
+        String   command = json.get("command").toString();
+    
+    
                     switch (command) {
-                    case "HANDSHAKE_REQUEST": {
-                        System.out.println("handshake received from " + inComingPeer);
-                        // unnecessary handshake
-                        if (ConnectionHost.getConnectedPeers().contains(inComingPeer)) {
-                            send("INVALID_PROTOCOL");
-                            System.out.println("replicated request!");
-                            if (ConnectionHost.ClientConnectionList
-                                    .contains(ConnectionHost.getConnectionMap().get(inComingPeer)))
-                                this.ConnectionClose();
-                        } else {
-                            if (ConnectionHost.getConnectionNum() <= ConnectionHost.getMaximumConnections()) {
-                                send("HANDSHAKE_RESPONSE");
-                                System.out.println("Handshake response sent!");
-                                ConnectionHost.ServerConnectionList.add(this);
-                                ConnectionHost.AddConnectedPeers(inComingPeer, this);
-                            } else {
-                                send("CONNECTION_REFUSED");
-                                System.out.println("Handshake refused message sent");
-                                this.ConnectionClose();
-                            }
+                        case "HANDSHAKE_REQUEST": {
+                inComingPeer = (JSONObject) json.get("hostPort");
+                c.ConnectingPeer= inComingPeer;
+                System.out.println("handshake received from " + inComingPeer);
+                // unnecessary handshake
+                if (ConnectionHost.getConnectedPeers().contains(inComingPeer)) {
+                    try {
+                        c.send("INVALID_PROTOCOL");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("replicated request!");
+                    if (ConnectionHost.ClientConnectionList.contains(ConnectionHost.getConnectionMap().get(inComingPeer)))
+                        c.ConnectionClose();
+                } else {
+                    if (ConnectionHost.getConnectionNum() <= ConnectionHost.getMaximumConnections()) {
+                        try {
+                            c.ConnectingPeer = inComingPeer;
+                            c.send("HANDSHAKE_RESPONSE");
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
-                        break;
+                        System.out.println("Handshake response sent!");
+                        ConnectionHost.AddServerConnectionList(c);
+                        ConnectionHost.AddConnectedPeers(inComingPeer, c);
+                    } else {
+                        try {
+                            c.send("CONNECTION_REFUSED");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        System.out.println("Handshake refused message sent");
+                        c.ConnectionClose();
                     }
-                    case "HANDSHAKE_RESPONSE": {
-                        ConnectionHost.AddConnectedPeers(inComingPeer, this);
-                        ConnectionHost.ClientConnectionList.add(this);
-                        System.out.println("connection established.");
+                }
+                break;
+            }
+            case "HANDSHAKE_RESPONSE": {
+                inComingPeer = (JSONObject) json.get("hostPort");
+                c.ConnectingPeer = inComingPeer;
+                ConnectionHost.AddConnectedPeers(inComingPeer, c);
+                ConnectionHost.AddClientConnectionList(c);
+                System.out.println("connection established.");
+                break;
+            }
+            case "INVALID_PROTOCOL": {
+                System.out.println("connection been refused by protocol problems.");
+                c.ConnectionClose();
+                break;
+            }
 
-                        break;
-                    }
-                    case "INVALID_PROTOCOL": {
-                        System.out.println("connection been refused by protocol problems.");
-                        this.ConnectionClose();
-                        break;
-                    }
-
-                    case "CONNECTION_REFUSED": {
-                        System.out.println("connection been refused by incoming limit.");
-                        this.ConnectionClose();
-                        break;
-                    }
+            case "CONNECTION_REFUSED": {
+                System.out.println("connection been refused by incoming limit.");
+                c.ConnectionClose();
+                break;
+            }
 
                     case "FILE_CREATE_REQUEST": {
                         System.out.println("FILE_CREATE_REQUEST received.");
@@ -257,6 +324,9 @@ public class Connection implements Runnable {
                 e.printStackTrace();
             }
         }
-    }
-
 }
+    
+    
+                    
+                    
+                  
