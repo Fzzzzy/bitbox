@@ -24,12 +24,25 @@ public class ServerMain implements FileSystemObserver {
 
 	public ServerMain() throws NumberFormatException, IOException, NoSuchAlgorithmException {
 		fileSystemManager = new FileSystemManager(Configuration.getConfigurationValue("path"), this);
-		// ArrayList<FileSystemEvent> pathevents = new ArrayList<FileSystemEvent>();
-		// pathevents = fileSystemManager.generateSyncEvents();
+	}
 
-		// for (FileSystemEvent e : pathevents) {
-		// 	// do something
-		// }
+	// synchronazation after handshake with connected peers
+	public void getSync() {
+		Integer interval = Integer.parseInt(Configuration.getConfigurationValue("syncInterval"));
+		Boolean started = false;
+		while (!ConnectionHost.getConnectedPeers().isEmpty() && !started) {
+			try {
+				Thread.sleep(interval * 1000);
+				ArrayList<FileSystemEvent> pathevents = new ArrayList<FileSystemEvent>();
+				pathevents = fileSystemManager.generateSyncEvents();
+				for (FileSystemEvent e : pathevents) {
+					started = true;
+					processFileSystemEvent(e);
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	@Override
@@ -40,48 +53,43 @@ public class ServerMain implements FileSystemObserver {
 		switch (event) {
 		case FILE_CREATE:
 			json = getFileRequestFormat(fileSystemEvent);
-			try {
-				ConnectionHost.sendAll(json);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			if (json.get("pathName").toString() == ".DS_Store") 
+				break;
+			sendToAllPeers(json);			
 			break;
 
 		case FILE_MODIFY:
 			json = getFileRequestFormat(fileSystemEvent);
-			try {
-				ConnectionHost.sendAll(json);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			if (json.get("pathName").toString() == ".DS_Store") 
+				break;
+			sendToAllPeers(json);			
 			break;
 
 		case FILE_DELETE:
 			json = getFileRequestFormat(fileSystemEvent);
-			try {
-				ConnectionHost.sendAll(json);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			sendToAllPeers(json);			
 			break;
+
 		case DIRECTORY_CREATE:
 			json = getDirRequestFormat(fileSystemEvent);
-			try {
-				ConnectionHost.sendAll(json);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			sendToAllPeers(json);			
 			break;
+
 		case DIRECTORY_DELETE:
 			json = getDirRequestFormat(fileSystemEvent);
-			try {
-				ConnectionHost.sendAll(json);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			sendToAllPeers(json);
 			break;
+
 		default:
 			break;
+		}
+	}
+
+	public void sendToAllPeers(JSONObject json) {
+		try {
+			ConnectionHost.sendAll(json);
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -138,6 +146,7 @@ public class ServerMain implements FileSystemObserver {
 		json.put("pathName", name);
 		json.put("fileDescriptor", description);
 
+		// check for ready
 		boolean ready = false;
 		if (fileSystemManager.isSafePathName(name)) {
 			if (!fileSystemManager.fileNameExists(name)) {
@@ -178,6 +187,7 @@ public class ServerMain implements FileSystemObserver {
 		json.put("pathName", name);
 		json.put("fileDescriptor", description);
 
+		// check for ready
 		boolean ready = false;
 		if (fileSystemManager.isSafePathName(name)) {
 			if (fileSystemManager.fileNameExists(name)) {
@@ -199,7 +209,7 @@ public class ServerMain implements FileSystemObserver {
 		return json;
 	}
 
-	// response for file deleting
+	// response for file deletion
 	public JSONObject fileDeleteResponse(JSONObject request) throws NoSuchAlgorithmException, IOException {
 		JSONObject json = new JSONObject();
 		JSONObject description = new JSONObject();
@@ -218,6 +228,7 @@ public class ServerMain implements FileSystemObserver {
 		json.put("pathName", name);
 		json.put("fileDescriptor", description);
 
+		// check for ready
 		boolean ready = false;
 		if (fileSystemManager.isSafePathName(name)) {
 			if (fileSystemManager.fileNameExists(name)) {
@@ -239,10 +250,12 @@ public class ServerMain implements FileSystemObserver {
 		return json;
 	}
 
+	// prepare the file_bytes_request
 	public JSONObject fileBytesRequest(JSONObject response) {
 		JSONObject json = new JSONObject();
 		String pathName = response.get("pathName").toString();
 
+		// check shortcut before sending request
 		Boolean shortcut = false;
 		try {
 			shortcut = fileSystemManager.checkShortcut(pathName);
@@ -319,6 +332,7 @@ public class ServerMain implements FileSystemObserver {
 		return json;
 	}
 
+	// prepare the file_bytes_response
 	public JSONObject fileBytesResponse(JSONObject request) {
 		JSONObject json = new JSONObject();
 		JSONObject des = new JSONObject();
