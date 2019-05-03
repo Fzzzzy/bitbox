@@ -11,8 +11,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 // store and implement the basic functions for each connection
 public class Connection implements Runnable {
@@ -94,15 +92,17 @@ public class Connection implements Runnable {
             try {
                 data = inreader.readLine();
                 if (data != null) {
-                    // System.out.println(data);
-                    tasks.add(data);
-                    while (!tasks.isEmpty()) {
-                        String task = tasks.poll();
+                    System.out.println(data);
+                   tasks.add(data);
+                    ProcessingPool.wait(100);
+                   while (!tasks.isEmpty()) {
+                       String task = tasks.poll();
                         Processing processing = new Processing(this, task);
                         ProcessingPool.execute(processing);
-                    }
+                       ProcessingPool.wait(100);
+                   }
                 }
-            } catch (IOException e1) {
+            } catch (IOException | InterruptedException e1) {
                 e1.printStackTrace();
             }
         }
@@ -121,17 +121,8 @@ class Processing implements Runnable {
     public void run() {
         JSONObject json = new JSONObject();
         JSONObject inComingPeer;
-
-
         try {
-            json = (JSONObject) new JSONParser().parse(data.replaceAll("\n", ""));
-            json.escape("\b");
-            json.escape("\f");
-            json.escape("\n");
-            json.escape("\r");
-            json.escape("\t");
-            json.escape("\"");
-            json.escape("\\");
+            json = (JSONObject) new JSONParser().parse(this.data);
         } catch (ParseException e) {
             e.printStackTrace();
             try {
