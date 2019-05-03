@@ -1,5 +1,6 @@
 package unimelb.bitbox;
 
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -56,6 +57,18 @@ public class Connection implements Runnable {
 
         if (command.equals("HANDSHAKE_REQUEST") || command.equals("HANDSHAKE_RESPONSE")) {
             jObj.put("hostPort", HostingPeer);
+        } else if (command.equals("INVALID_PROTOCOL")) {
+            jObj.put("message", "message must contain a command field as string");
+
+        } else if (command.equals("CONNECTION_REFUSED")) {
+            JSONArray peers = new JSONArray();
+            for (JSONObject peer : ConnectionHost.getConnectedPeers()) {
+                JSONObject peerN = new JSONObject();
+                peerN = peer;
+                peers.add(peerN);
+            }
+            jObj.put("message", "connection limit reached");
+            jObj.put("peers", peers);
         }
         outwriter.println(jObj.toJSONString());
         outwriter.flush();
@@ -162,13 +175,13 @@ class Processing implements Runnable {
         }
         case "INVALID_PROTOCOL": {
             System.out.println("connection been refused by protocol problems.");
-            c.ConnectionClose();
+            // c.ConnectionClose();
             break;
         }
 
         case "CONNECTION_REFUSED": {
             System.out.println("connection been refused by incoming limit.");
-            c.ConnectionClose();
+            // c.ConnectionClose();
             break;
         }
 
@@ -182,15 +195,16 @@ class Processing implements Runnable {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            try {
-                c.sendJson(response);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
 
-            // if the file loader is ready, ask for file bytes
-            if (response.get("message") == "file loader ready") {
+            if (response.get("status").toString() == "true") {
+                try {
+                    c.sendJson(response);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
                 JSONObject byteRequest = ConnectionHost.fileOperator.fileBytesRequest(response);
+                // if the file loader is ready, ask for file bytes
                 if (byteRequest.get("command") == null) {
                     System.out.println("file writing is finished.");
                 } else {
@@ -202,6 +216,7 @@ class Processing implements Runnable {
                     System.out.println("FILE_BYTES_REQUEST sended.");
                 }
             }
+
             break;
         }
 

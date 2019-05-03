@@ -141,12 +141,12 @@ public class ServerMain implements FileSystemObserver {
 		json.put("fileDescriptor", description);
 
 		// check for ready
-		boolean ready = false;
+		json.put("status", "false");
 		if (fileSystemManager.isSafePathName(name)) {
 			if (!fileSystemManager.fileNameExists(name)) {
 				if (fileSystemManager.createFileLoader(name, md5, size, lm)) {
 					json.put("message", "file loader ready");
-					ready = true;
+					json.replace("status", "false", "true");
 				} else {
 					json.put("message", "there was a problem creating the file");
 				}
@@ -157,7 +157,6 @@ public class ServerMain implements FileSystemObserver {
 		} else {
 			json.put("message", "unsafe pathname given");
 		}
-		json.put("status", ready);
 
 		return json;
 	}
