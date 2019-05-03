@@ -16,7 +16,7 @@ import java.util.concurrent.Executors;
 public class Connection implements Runnable {
     private BufferedReader inreader;
     public JSONObject ConnectingPeer;
-    protected ExecutorService ProcessingPool = Executors.newFixedThreadPool(10);
+    protected ExecutorService ProcessingPool = Executors.newCachedThreadPool();
     private PrintWriter outwriter;
     Socket clientSocket;
     boolean flag = true;
@@ -92,7 +92,8 @@ public class Connection implements Runnable {
             try {
                 data = inreader.readLine();
                 if (data != null) {
-                    System.out.println(data);
+                    
+                    // System.out.println(data);
                     tasks.add(data);
                     while (!tasks.isEmpty()) {
                         String task = tasks.poll();

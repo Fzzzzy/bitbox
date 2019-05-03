@@ -92,7 +92,7 @@ public class ClientSide implements Runnable
                     json.put("hostPort", hostPort);
                     writer.println(json.toJSONString());
                     writer.flush();
-                    System.out.println("send handshake request to " + hostPort);
+                    System.out.println("send handshake request to " + Opeer);
                     Connection c = null;
                     try {
                         c = ConnectionHost.ClientConnection(clientSocket);
