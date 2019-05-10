@@ -11,9 +11,11 @@ import java.util.Set;
 
 public class CommandGroup {
     public static Map<String, JSONObject>  CommandMap= new HashMap<>();
-    public static String[] CommandName ={"INVALID_PROTOCOL", "CONNECTION_REFUSED","HANDSHAKE_REQUEST","HANDSHAKE_RESPONSE","FILE_CREATE_REQUEST","FILE_CREATE_RESPONSE"
-    , "FILE_BYTES_REQUEST", "FILE_BYTES_RESPONSE", "FILE_DELETE_REQUEST", "FILE_DELETE_RESPONSE","FILE_MODIFY_REQUEST"
-    ,"FILE_MODIFY_RESPONSE","DIRECTORY_CREATE_REQUEST","DIRECTORY_CREATE_RESPONSE","DIRECTORY_DELETE_REQUEST","DIRECTORY_DELETE_RESPONSE"
+    public static String[] CommandName ={"INVALID_PROTOCOL", "CONNECTION_REFUSED", "HANDSHAKE_REQUEST", "HANDSHAKE_RESPONSE", "FILE_CREATE_REQUEST", "FILE_CREATE_RESPONSE"
+    , "FILE_BYTES_REQUEST", "FILE_BYTES_RESPONSE", "FILE_DELETE_REQUEST", "FILE_DELETE_RESPONSE", "FILE_MODIFY_REQUEST"
+    ,"FILE_MODIFY_RESPONSE", "DIRECTORY_CREATE_REQUEST", "DIRECTORY_CREATE_RESPONSE", "DIRECTORY_DELETE_REQUEST", "DIRECTORY_DELETE_RESPONSE"
+    ,"AUTH_REQUEST", "AUTH_RESPONSE", "LIST_PEERS_REQUEST", "LIST_PEERS_RESPONSE", "CONNECT_PEER_REQUEST", "CONNECT_PEER_RESPONSE"
+    ,"DISCONNECT_PEER_REQUEST", "DISCONNECT_PEER_RESPONSE"
     };
 
 
@@ -127,7 +129,46 @@ public class CommandGroup {
             "{\"command\":\"DIRECTORY_DELETE_RESPONSE\"," +
                     "\"pathName\":\"dir/subdir/etc\"," +
                     "\"message\":\"directory deleted\"," +
-                    "\"status\":true}"
+                    "\"status\":true}",
+             
+            "{\"command\":\"AUTH_REQUEST\"," +
+            	    "\"identity\":\"aaron@krusty}",
+        
+            "{\"command\":\"AUTH_RESPONSE\"," +
+                    "\"AES128\":[BASE64 ENCODED, ENCRYPTED SECRET KEY]," +
+                    "\"status\":\true," +
+                    "\"message\":\"public key found\"}",
+                 
+            "{\"command\":\"LIST_PEERS_REQUEST\",}",
+            
+            "{\"command\":\"LIST_PEERS_RESPONSE\"," +
+                    "\"peers\":[" +
+                    "{"+
+                    "\"host\":\"bigdata.cis.unimelb.edu.au\"," +
+                    "\"port\":8500" +
+                    "}"+
+                    "]"+
+                    "}",
+                    
+            "{\"command\":\"CONNECT_PEER_REQUEST\"," +
+                    "\"host\":\"bigdata.cis.unimelb.edu.au\"," +
+                    "\"port\":8500",
+                     
+            "{\"command\":\"CONNECT_PEER_RESPONSE\"," +
+                    "\"host\":\"bigdata.cis.unimelb.edu.au\"," +
+                    "\"port\":8500," +
+                    "\"status\":true," +
+                    "\"message\":\"connected to peer\"}",
+                    
+            "{\"command\":\"DISCONNECT_PEER_REQUEST\"," +
+                    "\"host\":\"bigdata.cis.unimelb.edu.au\"," +
+                    "\"port\":8500",
+                     
+            "{\"command\":\"DISCONNECT_PEER_RESPONSE\"," +
+                    "\"host\":\"bigdata.cis.unimelb.edu.au\"," +
+                    "\"port\":8500," +
+                    "\"status\":true," +
+                    "\"message\":\"disconnected to peer\"}"       
     };
 
 
