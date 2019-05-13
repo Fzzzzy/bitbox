@@ -1,122 +1,77 @@
 package unimelb.bitbox;
-import java.io.UnsupportedEncodingException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import javax.crypto.BadPaddingException;
+
+import java.util.UUID;
+
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
- 
+
+/**
+ * AES工具类，密钥必须是16位字符串
+ */
 public class AESUtils {
-	
-	/**
-	 * <p>Discription:[encryption]</p>
-	 * @param content JSON.toJSONString(Map<String, String> map) transfered json string
-	 * @param key 
-	 * @return String ciphertext
-	 */
-	public static String ecodes(String content, String key) {
-		if (content == null || content.length() < 1) {
-			return null;
-		}
-		try {
-			KeyGenerator kgen = KeyGenerator.getInstance("AES");
-			SecureRandom random=SecureRandom.getInstance("SHA1PRNG");
-			random.setSeed(key.getBytes());
-			kgen.init(128, random);
-			SecretKey secretKey = kgen.generateKey();
-			byte[] enCodeFormat = secretKey.getEncoded();
-			SecretKeySpec secretKeySpec = new SecretKeySpec(enCodeFormat, "AES");
-			Cipher cipher = Cipher.getInstance("AES");
-			byte[] byteContent = content.getBytes("utf-8");
-			cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
-			byte[] byteRresult = cipher.doFinal(byteContent);
-			StringBuffer sb = new StringBuffer();
-			for (int i = 0; i < byteRresult.length; i++) {
-				String hex = Integer.toHexString(byteRresult[i] & 0xFF);
-				if (hex.length() == 1) {
-					hex = '0' + hex;
-				}
-				sb.append(hex.toUpperCase());
-			}
-			return sb.toString();
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		} catch (NoSuchPaddingException e) {
-			e.printStackTrace();
-		} catch (InvalidKeyException e) {
-			e.printStackTrace();
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		} catch (IllegalBlockSizeException e) {
-			e.printStackTrace();
-		} catch (BadPaddingException e) {
-			e.printStackTrace();
-		}
-		return null;
+
+	/**偏移量,必须是16位字符串*/
+    private static final String IV_STRING = "16-Bytes--String";
+
+    /**
+     * 默认的密钥
+     */
+    public static final String DEFAULT_KEY = "1bd83b249a414036";
+
+    /**
+     * 产生随机密钥(这里产生密钥必须是16位)
+     */
+    public static String generateKey() {
+        String key = UUID.randomUUID().toString();
+        key = key.replace("-", "").substring(0, 16);// 替换掉-号
+        return key;
+    }
+
+    public static String encryptData(String key, String content) {
+        byte[] encryptedBytes = new byte[0];
+        try {
+            byte[] byteContent = content.getBytes("UTF-8");
+            // 注意，为了能与 iOS 统一
+            // 这里的 key 不可以使用 KeyGenerator、SecureRandom、SecretKey 生成
+            byte[] enCodeFormat = key.getBytes();
+            SecretKeySpec secretKeySpec = new SecretKeySpec(enCodeFormat, "AES");
+            byte[] initParam = IV_STRING.getBytes();
+            IvParameterSpec ivParameterSpec = new IvParameterSpec(initParam);
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
+            encryptedBytes = cipher.doFinal(byteContent);
+            return Base64Utils.encode(encryptedBytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static String decryptData(String key, String content) {
+        try {
+            // base64 解码
+            byte[] encryptedBytes = Base64Utils.decode(content);
+            byte[] enCodeFormat = key.getBytes();
+            SecretKeySpec secretKey = new SecretKeySpec(enCodeFormat, "AES");
+            byte[] initParam = IV_STRING.getBytes();
+            IvParameterSpec ivParameterSpec = new IvParameterSpec(initParam);
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivParameterSpec);
+            byte[] result = cipher.doFinal(encryptedBytes);
+            return new String(result, "UTF-8");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
+    public static void main(String[] args) {
+		String cipherText = AESUtils.encryptData("F431E6FF9051DA07", "LIST_PEERS_REQUEST");
+		String plainText = AESUtils.decryptData("F431E6FF9051DA07", cipherText);
+		
+		System.out.println("aes加密后: " + cipherText);
+		System.out.println("aesJie密后: " + plainText);
 	}
- 
-	/**
-	 * <p>Discription:[decryption]</p>
-	 * @param content ciphertext
-	 * @param key 
-	 * @return String plaintext
-	 */
-	public static String dcodes(String content, String key) {
-		if (content == null || content.length() < 1) {
-			return null;
-		}
-		if (content.trim().length() < 19) {
-			return content;
-		}
-		byte[] byteRresult = new byte[content.length() / 2];
-		for (int i = 0; i < content.length() / 2; i++) {
-			int high = Integer.parseInt(content.substring(i * 2, i * 2 + 1), 16);
-			int low = Integer.parseInt(content.substring(i * 2 + 1, i * 2 + 2), 16);
-			byteRresult[i] = (byte) (high * 16 + low);
-		}
-		try {
-			KeyGenerator kgen = KeyGenerator.getInstance("AES");
-			SecureRandom random=SecureRandom.getInstance("SHA1PRNG");
-			random.setSeed(key.getBytes());
-			kgen.init(128, random);
-			SecretKey secretKey = kgen.generateKey();
-			byte[] enCodeFormat = secretKey.getEncoded();
-			SecretKeySpec secretKeySpec = new SecretKeySpec(enCodeFormat, "AES");
-			Cipher cipher = Cipher.getInstance("AES");
-			cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
-			byte[] result = cipher.doFinal(byteRresult);
-			return new String(result);
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		} catch (NoSuchPaddingException e) {
-			e.printStackTrace();
-		} catch (InvalidKeyException e) {
-			e.printStackTrace();
-		} catch (IllegalBlockSizeException e) {
-			e.printStackTrace();
-		} catch (BadPaddingException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-	
-	public static void main(String[] args) {
-		try {
-//			
-			String ciphertext = AESUtils.ecodes("{\"id\":1759,\"reservationId\":1511867174251,\"visitingPurpose\":1,\"officeBuildingId\":1,\"officeBuildingName\":\"1\",\"cityId\":1,\"cityName\":\"1\",\"reservationStatus\":1,\"visitorName\":\"1 \",\"visitorAreaCode\":\"1\",\"visitorPhone\":\"1\",\"visitorEmail\":null,\"remark\":null,\"visitingTime\":1,\"visitorNum\":1,\"visitingUnit\":null,\"messageNum\":null,\"photoUrl\":null,\"receptionUserName\":\"1\",\"receptionUserDomainAccount\":\"1\",\"visitingInvitationCode\":null,\"createUser\":\"1\",\"createTime\":1,\"createUserDomainAccount\":null,\"updateTime\":null,\"signTime\":null,\"alreadySignedInNum\":null,\"alreadySignedOutNum\":null,\"accompanyPersons\":null,\"visitingReason\":null,\"field1\":null,\"field2\":null,\"field3\":null,\"field4\":null,\"field5\":null,\"approveStatus\":1,\"levelOneName\":null,\"levelTwoName\":null,\"createPlatform\":1}",
-					"AAAAB3NzaC1yc2EAAAADAQABAAABAQCymM7yjAoXWqlMoNvrAYU2PjOWaLDDFYZt51f1VjaWq4oelhYwH02SLeZ6rBUSAbyjxdFCsJ9Tzc/VEbZCtv8eRXWJWPvNrraSlA1c1u8zqI06XboLi6UoUGJ4lVI0+Y/3ljkyiQc+/se/B8ywD5+IOZ6a9sdY+I4P+BP6i74W+zvEp3czmdxpRVIq0bv0u7jWTBhcnYyohgxMQgObdLS2zBwju+nVh+y2zzPBMIx1FRy1rrMocsifExkII1Ll6xNllfQsRpCvr/q2tQjs9FgV7WqDQt8r+uh/aN/GvZA+6yy1CYofIocLWreIOaVTrEjJcVDnli9XwXIyVky1NmeN");
-			System.out.println("ciphertext : " + ciphertext);
-			
-			String plaintext = AESUtils.dcodes(ciphertext, "AAAAB3NzaC1yc2EAAAADAQABAAABAQCymM7yjAoXWqlMoNvrAYU2PjOWaLDDFYZt51f1VjaWq4oelhYwH02SLeZ6rBUSAbyjxdFCsJ9Tzc/VEbZCtv8eRXWJWPvNrraSlA1c1u8zqI06XboLi6UoUGJ4lVI0+Y/3ljkyiQc+/se/B8ywD5+IOZ6a9sdY+I4P+BP6i74W+zvEp3czmdxpRVIq0bv0u7jWTBhcnYyohgxMQgObdLS2zBwju+nVh+y2zzPBMIx1FRy1rrMocsifExkII1Ll6xNllfQsRpCvr/q2tQjs9FgV7WqDQt8r+uh/aN/GvZA+6yy1CYofIocLWreIOaVTrEjJcVDnli9XwXIyVky1NmeN");
-			System.out.println("plaintext : " + plaintext);
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+    
 }
