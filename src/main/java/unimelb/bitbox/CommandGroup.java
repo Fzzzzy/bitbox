@@ -1,6 +1,10 @@
 package unimelb.bitbox;
 
+<<<<<<< HEAD
 import org.json.simple.JSONObject;
+=======
+import net.sf.json.JSONObject;
+>>>>>>> upstream/Cassie
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
@@ -39,7 +43,11 @@ public class CommandGroup {
                     "\"md5\":\"074195d72c47315efae797b69393e5e5\"," +
                     "\"lastModified\":1553417607000," +
                     "}," +
+<<<<<<< HEAD
                     "\"fileSize\":45787" +
+=======
+                    "\"fileSize\":45787," +
+>>>>>>> upstream/Cassie
                     "\"pathName\":\"test.jpg\"}",
 
             "{\"command\":\"FILE_CREATE_RESPONSE\"," +
@@ -47,7 +55,11 @@ public class CommandGroup {
                     "\"md5\":\"074195d72c47315efae797b69393e5e5\"," +
                     "\"lastModified\":1553417607000," +
                     "}," +
+<<<<<<< HEAD
                     "\"fileSize\":45787" +
+=======
+                    "\"fileSize\":45787," +
+>>>>>>> upstream/Cassie
                     "\"pathName\":\"test.jpg\"," +
                     "\"message\":\"file loader ready\"," +
                     "\"status\":true}",
@@ -57,7 +69,11 @@ public class CommandGroup {
                     "\"md5\":\"b1946ac92492d2347c6235b4d2611184\"," +
                     "\"lastModified\":1553417607000," +
                     "}," +
+<<<<<<< HEAD
                     "\"fileSize\":6" +
+=======
+                    "\"fileSize\":6," +
+>>>>>>> upstream/Cassie
                     "\"pathName\":\"hello.txt\"," +
                     "\"position\":0," +
                     "\"length\":6}",
@@ -71,7 +87,11 @@ public class CommandGroup {
                     "\"pathName\":\"hello.txt\"," +
                     "\"position\":0," +
                     "\"length\":6," +
+<<<<<<< HEAD
                     "\"content\":\"aGVsbG8K\"" +
+=======
+                    "\"content\":\"aGVsbG8K\"," +
+>>>>>>> upstream/Cassie
                     "\"message\":\"successful read\"," +
                     "\"status\":true}",
 
@@ -80,7 +100,11 @@ public class CommandGroup {
                     "}," +
                     "\"md5\":\"074195d72c47315efae797b69393e5e5\"," +
                     "\"lastModified\":1553417607000," +
+<<<<<<< HEAD
                     "\"fileSize\":45787" +
+=======
+                    "\"fileSize\":45787," +
+>>>>>>> upstream/Cassie
                     "\"pathName\":\"test.jpg\"}",
 
             "{\"command\":\"FILE_DELETE_RESPONSE\"," +
@@ -88,7 +112,11 @@ public class CommandGroup {
                     "\"md5\":\"074195d72c47315efae797b69393e5e5\"," +
                     "\"lastModified\":1553417607000," +
                     "}," +
+<<<<<<< HEAD
                     "\"fileSize\":45787" +
+=======
+                    "\"fileSize\":45787," +
+>>>>>>> upstream/Cassie
                     "\"pathName\":\"test.jpg\"," +
                     "\"message\":\"pathname does not exist\"," +
                     "\"status\":false}",
@@ -98,7 +126,11 @@ public class CommandGroup {
                     "}," +
                     "\"md5\":\"d35eab5dd9cb8b0d467c7e742c9b8c4c\"," +
                     "\"lastModified\":1553417617000," +
+<<<<<<< HEAD
                     "\"fileSize\":46787" +
+=======
+                    "\"fileSize\":46787," +
+>>>>>>> upstream/Cassie
                     "\"pathName\":\"test.jpg\"}",
 
             "{\"command\":\"FILE_MODIFY_RESPONSE\"," +
@@ -106,7 +138,11 @@ public class CommandGroup {
                     "\"md5\":\"074195d72c47315efae797b69393e5e5\"," +
                     "\"lastModified\":1553417607000," +
                     "}," +
+<<<<<<< HEAD
                     "\"fileSize\":45787" +
+=======
+                    "\"fileSize\":45787," +
+>>>>>>> upstream/Cassie
                     "\"pathName\":\"test.jpg\"," +
                     "\"message\":\"file loader ready\"," +
                     "\"status\":true}",
@@ -131,13 +167,17 @@ public class CommandGroup {
     };
 
 
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> upstream/Cassie
     public CommandGroup()
     {
 
        for(int i=0; i<CommandString.length; i++) {
+<<<<<<< HEAD
             try {
               JSONObject json;
                json = (JSONObject) new JSONParser().parse(CommandString[i]);
@@ -147,6 +187,16 @@ public class CommandGroup {
             {
                 System.out.println("parse failed");
             }
+=======
+        
+               //json = (JSONObject) new JSONParser().parse(CommandString[i]);
+               JSONObject jsonObject=JSONObject.fromObject(CommandString[i]); 
+
+               
+                String key = jsonObject.getString("command");
+                //System.out.println("Key: "+ key);
+              this.CommandMap.put(key, jsonObject);
+>>>>>>> upstream/Cassie
         }
    }
 
