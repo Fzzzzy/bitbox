@@ -6,25 +6,17 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-/**
- * AES工具类，密钥必须是16位字符串
- */
+
 public class AESUtils {
 
-	/**偏移量,必须是16位字符串*/
-    private static final String IV_STRING = "16-Bytes--String";
+	private static final String IV_STRING = "16-Bytes--String";
 
-    /**
-     * 默认的密钥
-     */
-    public static final String DEFAULT_KEY = "1bd83b249a414036";
+	public static final String DEFAULT_KEY = "1bd83b249a414036";
 
-    /**
-     * 产生随机密钥(这里产生密钥必须是16位)
-     */
+    //generate random key
     public static String generateKey() {
         String key = UUID.randomUUID().toString();
-        key = key.replace("-", "").substring(0, 16);// 替换掉-号
+        key = key.replace("-", "").substring(0, 16);// 
         return key;
     }
 
@@ -32,8 +24,6 @@ public class AESUtils {
         byte[] encryptedBytes = new byte[0];
         try {
             byte[] byteContent = content.getBytes("UTF-8");
-            // 注意，为了能与 iOS 统一
-            // 这里的 key 不可以使用 KeyGenerator、SecureRandom、SecretKey 生成
             byte[] enCodeFormat = key.getBytes();
             SecretKeySpec secretKeySpec = new SecretKeySpec(enCodeFormat, "AES");
             byte[] initParam = IV_STRING.getBytes();
@@ -50,7 +40,7 @@ public class AESUtils {
 
     public static String decryptData(String key, String content) {
         try {
-            // base64 解码
+            // base64 decode
             byte[] encryptedBytes = Base64Utils.decode(content);
             byte[] enCodeFormat = key.getBytes();
             SecretKeySpec secretKey = new SecretKeySpec(enCodeFormat, "AES");
@@ -70,8 +60,8 @@ public class AESUtils {
 		String cipherText = AESUtils.encryptData("F431E6FF9051DA07", "LIST_PEERS_REQUEST");
 		String plainText = AESUtils.decryptData("F431E6FF9051DA07", cipherText);
 		
-		System.out.println("aes加密后: " + cipherText);
-		System.out.println("aesJie密后: " + plainText);
+		System.out.println("aes encrypted: " + cipherText);
+		System.out.println("aes decrypted: " + plainText);
 	}
     
 }
