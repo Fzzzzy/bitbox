@@ -41,7 +41,7 @@ public class AESUtils {
     public static String decryptData(String key, String content) {
         try {
             // base64 decode
-            byte[] encryptedBytes = Base64Utils.decode(content);
+            byte[] encryptedBytes = Base64.getDecoder().decode(content);
             byte[] enCodeFormat = key.getBytes();
             SecretKeySpec secretKey = new SecretKeySpec(enCodeFormat, "AES");
             byte[] initParam = IV_STRING.getBytes();
