@@ -31,7 +31,7 @@ public class AESUtils {
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
             encryptedBytes = cipher.doFinal(byteContent);
-            return Base64Utils.encode(encryptedBytes);
+            return new String(Base64.getEncoder().encode(encryptedBytes));
         } catch (Exception e) {
             e.printStackTrace();
         }
